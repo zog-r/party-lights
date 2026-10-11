@@ -1,0 +1,9 @@
+.env*
+.DS_Store
+node_modules/
+.vercel/
+gas/.clasp.json
+media/raw/
+gas/page_*.html
+gas/pages.gen.js
+gas/hero.gen.js

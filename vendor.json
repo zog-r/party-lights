@@ -1,0 +1,78 @@
+{
+  "entries": [
+    {
+      "name": "wildling-design-loop",
+      "repo": "https://github.com/zog-r/wildling-design-loop.git",
+      "local": "wildling-design-public",
+      "commit": "0016346",
+      "license": "MIT",
+      "files": [
+        {
+          "from": "skills/design-loop/",
+          "to": "skills/design-loop/"
+        },
+        {
+          "from": "agents/polish.md",
+          "to": "agents/polish.md"
+        }
+      ],
+      "patches": []
+    },
+    {
+      "name": "cool-uncle",
+      "repo": "https://github.com/zog-r/cool-uncle.git",
+      "local": "cool-uncle",
+      "commit": "a67e556",
+      "license": "MIT",
+      "files": [
+        {
+          "from": "skills/cool-uncle-shades/",
+          "to": "skills/cool-uncle-shades/"
+        }
+      ],
+      "patches": []
+    },
+    {
+      "name": "markup",
+      "repo": "https://github.com/zog-r/markup.git",
+      "local": "markup",
+      "commit": "2edfbd0",
+      "license": "MIT",
+      "files": [
+        {
+          "from": "SKILL.md",
+          "to": "skills/markup/SKILL.md"
+        },
+        {
+          "from": "overlay.js",
+          "to": "skills/markup/overlay.js"
+        }
+      ],
+      "patches": [
+        {
+          "file": "skills/markup/SKILL.md",
+          "find": "`~/.claude/skills/markup/overlay.js`",
+          "replace": "`overlay.js` next to this SKILL.md (here: `skills/markup/overlay.js`)"
+        }
+      ]
+    }
+  ],
+  "lock": {
+    "agents/polish.md": "0764b3cda39fa94bcd4ad0734a51e7895bd7c82273fab2647344d34006f4054f",
+    "skills/cool-uncle-shades/SKILL.md": "6a4d548a89cf00c4714aa5d970799772d13877b281aabf73b020c9272d76a34e",
+    "skills/design-loop/SKILL.md": "00fcad40cd0e362a324b58372f262874382d4046930efb09f992459c60a3baad",
+    "skills/design-loop/compare-prompt.md": "514328a3a66e33d4dab928216ec15cfcb9bde9bd4d0ecf25c44e8f1239d80f38",
+    "skills/design-loop/critic-prompt.md": "7f15bf7f3b17e5dd3551ca84e77cbe7139f38e76178b0c9cf0b51da8613d505a",
+    "skills/design-loop/media-compare-prompt.md": "d9900fdbfd31146e16d1c7fb32b1a33e79ae665704173388a949d8d26d5f5736",
+    "skills/design-loop/references/ai-tells.md": "3df01effb1e8420c7cef8026b1cc14326ebd6e342fed3ee71657a2a7b0886d22",
+    "skills/design-loop/references/ambition.md": "ed7eb2ac11a45d815b4cfb5b0a738505277fea63a9c6ba1457eeaa9976957461",
+    "skills/design-loop/references/copy.md": "0039ff62b5b428f1b2982f99a9ad1a15944016500682157ba8e2676d997f5bc3",
+    "skills/design-loop/references/media.md": "76d008a0a04b3b902c83456e46ca296c76052065fae5b1766f4087c0f4d1f916",
+    "skills/design-loop/scripts/loop.py": "67002f3ee6123b5c141f2648829fdd23b656b1e6dceac2dc284996d51e6134bc",
+    "skills/design-loop/scripts/media.py": "4b410af9e4884df2476d3d2f7e38f8d1b3e836a76c6a453cd4d28f52fff72772",
+    "skills/design-loop/scripts/rec.mjs": "a7f0a589e1f5ca05c426560f3b2c0f666f392276e9211cc81f9e349b4817500d",
+    "skills/design-loop/scripts/shot.mjs": "9d055a7d4a7f2799db6cb9fbf21ff3e6e68fb321003de3d2c4e0afcaf1093e14",
+    "skills/markup/SKILL.md": "9801007ed7b18b07ec979c905050831412e9f4c12a5c1dcfdfc79628cfc17ed0",
+    "skills/markup/overlay.js": "29b896f17b04ce46c45c91e27625bb8a6f8970ed2db519f94e7c872505f5a3a3"
+  }
+}

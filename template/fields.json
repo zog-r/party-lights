@@ -1,0 +1,1212 @@
+{
+  "about": "The field registry: every optional piece an event app can have, in plain language. v1 and v2 ship for seasonal holiday invites; other event types come later on the roadmap. The host names the holiday and the agent starts from that holiday's defaults. The interview agent reads ask_if, question and ask_extra; the build reads which modules are on. status: existing = in the template today, new = proposed. DRAFT: the holiday details (menu_ideas, ask_extra, design_mood) are first guesses to be reviewed by someone who celebrates each one. Field properties the tools read: ask:false = never ask the host (the build fills it); derive + derive_by = how a value is computed (code = gen-event.js does it, agent = the interviewer fills it from other answers, the host is not asked); default = what the site assumes when the key is absent; only_with = ask only while that module is on. required counts only while the field's module is on (always-on modules always).",
+  "event_types": [
+    {
+      "id": "thanksgiving",
+      "label": "Thanksgiving / Friendsgiving",
+      "season": "November",
+      "typical_dates": "Thanksgiving is the 4th Thursday of November. Friendsgiving is usually the weekend before or after.",
+      "blurb": "Everyone will talk about your turkey for years!",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "menu",
+        "dietary",
+        "policies",
+        "reminders",
+        "guest_list"
+      ],
+      "maybe": [
+        "vibe",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "activities"
+      ],
+      "menu_ideas": [
+        "Turkey",
+        "Stuffing",
+        "Mashed potatoes",
+        "Gravy",
+        "Beans",
+        "Roasted Squash",
+        "Cranberry sauce",
+        "Green bean casserole",
+        "Pumpkin pie"
+      ],
+      "design_mood": "Warm harvest: amber, rust, candlelight, a long table.",
+      "ask_extra": [
+        "Is this Thanksgiving Day or a Friendsgiving?",
+        "Who is cooking the turkey?",
+        "How do you want to bring people together?",
+        "What's a new tradition you want to create?"
+      ],
+      "activity_ideas": [
+        "Turkey trot in the morning",
+        "Football on the TV",
+        "Board games after dinner",
+        "Pie-baking contest"
+      ]
+    },
+    {
+      "id": "christmas",
+      "label": "Christmas",
+      "season": "December",
+      "typical_dates": "Christmas Eve is Dec 24 and Christmas Day is Dec 25. Parties are often the weekend before.",
+      "blurb": "Bring people together this holiday: a family meal, a cookie swap, a party...",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "menu",
+        "policies",
+        "reminders",
+        "guest_list",
+        "dietary"
+      ],
+      "maybe": [
+        "gift_exchange",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "vibe",
+        "activities"
+      ],
+      "menu_ideas": [
+        "Roast Beef",
+        "Honey Baked Ham",
+        "Cookie plates",
+        "Eggnog",
+        "Mulled wine"
+      ],
+      "design_mood": "Evergreen and candlelight. Warm and cozy, not cartoon Santa.",
+      "ask_extra": [
+        "Christmas Eve or Christmas Day?",
+        "Is it a party or a family meal?",
+        "Is there a gift exchange?",
+        "Is there a theme?",
+        "Will kids be there?",
+        "How would you like to bring people together?"
+      ],
+      "activity_ideas": [
+        "Cookie decorating",
+        "Christmas movie night",
+        "Caroling",
+        "Ugly sweater contest"
+      ]
+    },
+    {
+      "id": "hanukkah",
+      "label": "Hanukkah",
+      "season": "November or December",
+      "typical_dates": "Eight nights starting at sundown; the dates change every year.",
+      "blurb": "Celebrate Hanukkah with a gathering of family and friends",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "menu",
+        "dietary",
+        "policies",
+        "reminders",
+        "guest_list"
+      ],
+      "maybe": [
+        "gift_exchange",
+        "vibe",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "activities"
+      ],
+      "menu_ideas": [
+        "Latkes",
+        "Brisket",
+        "Sufganiyot",
+        "Applesauce and sour cream",
+        "Kugel"
+      ],
+      "design_mood": "Midnight blue and silver with candlelight. Elegant, not clip-art.",
+      "ask_extra": [
+        "Which night of Hanukkah?",
+        "Is there a candle lighting, and when?",
+        "Should the food be kosher or kosher-style?",
+        "What games bring your gathering together?",
+        "Is there a gift exchange?"
+      ],
+      "activity_ideas": [
+        "Candle lighting",
+        "Dreidel games",
+        "Gelt poker",
+        "Latke cook-off"
+      ]
+    },
+    {
+      "id": "kwanzaa",
+      "label": "Kwanzaa",
+      "season": "December 26 to January 1",
+      "typical_dates": "Seven nights, Dec 26 to Jan 1. The Karamu feast is traditionally Dec 31.",
+      "blurb": "A Kwanzaa celebration: one night of the seven, or the Karamu feast.",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "menu",
+        "policies",
+        "reminders",
+        "guest_list",
+        "dietary"
+      ],
+      "maybe": [
+        "gift_exchange",
+        "vibe",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "activities"
+      ],
+      "menu_ideas": [
+        "Jollof rice",
+        "Collard greens",
+        "Black eyed peas",
+        "Mazao",
+        "Jerk Chicken",
+        "Sweet potato pie"
+      ],
+      "design_mood": "Red, black and green with a kinara; warm, proud and festive.",
+      "ask_extra": [
+        "Which night, or the Karamu feast?",
+        "Will there be a candle lighting, a libation or readings?",
+        "Is it open to the whole community or just family?",
+        "What games or activities will bring your gathering together?"
+      ],
+      "activity_ideas": [
+        "Candle lighting",
+        "Storytelling",
+        "Music and dance",
+        "Kids' crafts"
+      ]
+    },
+    {
+      "id": "nye",
+      "label": "New Year's Eve",
+      "season": "December 31",
+      "typical_dates": "Dec 31 into Jan 1. It runs past midnight.",
+      "blurb": "Ring in the new year in your style!",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "vibe",
+        "policies",
+        "reminders",
+        "guest_list"
+      ],
+      "maybe": [
+        "menu",
+        "dietary",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "activities"
+      ],
+      "menu_ideas": [
+        "Stuffed mushrooms",
+        "Chicken skewers",
+        "Bruschetta",
+        "Champagne",
+        "Midnight snacks",
+        "Cookies"
+      ],
+      "design_mood": "Midnight and champagne gold. Sparkle with restraint.",
+      "ask_extra": [
+        "Can people sleep over?",
+        "Is it adults only?",
+        "Will there be a toast? What's the theme?",
+        "What will make the nigh memorable?"
+      ],
+      "activity_ideas": [
+        "Karaoke",
+        "Photo booth",
+        "Board games",
+        "Midnight countdown"
+      ]
+    },
+    {
+      "id": "holiday_party",
+      "label": "Holiday party (any other holiday)",
+      "season": "Any time of year",
+      "typical_dates": "The host says when. Use for a generic holiday party, or any holiday not listed.",
+      "blurb": "A festive gathering for any holiday.",
+      "on": [
+        "basics",
+        "rsvp",
+        "calendar",
+        "host_private",
+        "host_alerts",
+        "guest_emails",
+        "menu",
+        "policies",
+        "reminders",
+        "guest_list"
+      ],
+      "maybe": [
+        "gift_exchange",
+        "dietary",
+        "schedule",
+        "place",
+        "stay",
+        "rooms",
+        "trips",
+        "activities",
+        "vibe"
+      ],
+      "menu_ideas": [],
+      "design_mood": "Festive and warm; take cues from the holiday the host names.",
+      "ask_extra": [
+        "Which holiday is it?",
+        "Any traditions, dress or foods that matter for this one?"
+      ],
+      "activity_ideas": [
+        "Board games",
+        "Charades",
+        "Trivia"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "basics",
+      "label": "The basics",
+      "always": true,
+      "guests_get": "The invite page: name, when, where (town only), a welcome, and a hero photo.",
+      "ask_if": "Always.",
+      "fields": [
+        {
+          "key": "event_type",
+          "label": "Which holiday",
+          "question": "Which holiday are you celebrating?",
+          "kind": "choice",
+          "choices": [
+            "thanksgiving",
+            "christmas",
+            "hanukkah",
+            "kwanzaa",
+            "nye",
+            "holiday_party"
+          ],
+          "required": true,
+          "where": "event.json",
+          "status": "new"
+        },
+        {
+          "key": "holiday_name",
+          "label": "Holiday name",
+          "question": "Which holiday are you celebrating?",
+          "kind": "text",
+          "required": false,
+          "example": "Diwali",
+          "where": "event.json",
+          "status": "new",
+          "note": "Only asked for \"any other holiday\".",
+          "ask": false
+        },
+        {
+          "key": "title",
+          "label": "Event name",
+          "question": "What's your event's name?",
+          "kind": "text",
+          "required": true,
+          "example": "Winter Supper at the Cabin",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "title_em",
+          "label": "Italic ending of the name",
+          "question": "Want the end of the name in italics?",
+          "kind": "text",
+          "required": false,
+          "example": "at the Cabin",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "brand",
+          "label": "Short name",
+          "question": "Is there a punchy shorthand you want on the event pages?",
+          "kind": "text",
+          "required": false,
+          "example": "The Cabin",
+          "where": "event.json",
+          "status": "existing",
+          "ask": false,
+          "derive": "The event name.",
+          "derive_by": "code"
+        },
+        {
+          "key": "tagline",
+          "label": "Link-preview line",
+          "question": "What one sentence should show when you text the link?",
+          "kind": "text",
+          "required": false,
+          "example": "A weekend of friends, family, and a long table of good food.",
+          "where": "event.json",
+          "status": "existing",
+          "ask": false,
+          "derive": "The first sentence of the welcome.",
+          "derive_by": "code"
+        },
+        {
+          "key": "intro",
+          "label": "Welcome",
+          "question": "Two or three sentences to welcome guests to your event page.",
+          "kind": "longtext",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "description",
+          "label": "The full plan",
+          "question": "Do you want to provide guests a full agenda? Anything else your guests need to know?",
+          "kind": "longtext",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "area",
+          "label": "Town or area",
+          "question": "If you want to hide your address until invitees rsvp, what should the location say before the RSVP is accepted?",
+          "kind": "text",
+          "required": true,
+          "example": "Pine Hollow",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "timezone",
+          "label": "Time zone",
+          "question": "What time zone is it in?",
+          "kind": "timezone",
+          "required": true,
+          "example": "America/Denver",
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Guess the IANA zone from the town or area; confirm only if unsure.",
+          "derive_by": "agent"
+        },
+        {
+          "key": "main.start",
+          "label": "Start",
+          "question": "When does it start?",
+          "kind": "datetime",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "main.end",
+          "label": "End",
+          "question": "When does it end?",
+          "kind": "datetime",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "main.label",
+          "label": "Main moment's name",
+          "question": "Want to brand your central moment of the event? What'll you call it?",
+          "kind": "text",
+          "required": true,
+          "example": "Winter supper",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "when_text",
+          "label": "Date line",
+          "question": "How should the date read on the page?",
+          "kind": "text",
+          "required": false,
+          "example": "Sat, Dec 19 · 5 PM",
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Built from main.start, e.g. \"Sat, Dec 19 · 5 PM\".",
+          "derive_by": "code"
+        },
+        {
+          "key": "images.hero",
+          "label": "Hero photo",
+          "question": "Do you have a wide photo for the top of the homepage?",
+          "kind": "image",
+          "required": true,
+          "where": "event.json",
+          "status": "existing",
+          "note": "Placeholder is fine; the app works without a real photo."
+        }
+      ]
+    },
+    {
+      "id": "schedule",
+      "label": "Schedule",
+      "guests_get": "A schedule on the invite page.",
+      "ask_if": "The event has more than one moment, or runs more than one day.",
+      "fields": [
+        {
+          "key": "schedule[].date",
+          "label": "Day",
+          "question": "Which day?",
+          "kind": "date",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "schedule[].title",
+          "label": "Headline",
+          "question": "What happens?",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "schedule[].text",
+          "label": "Details",
+          "question": "A line of detail?",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "schedule[].link",
+          "label": "Link",
+          "question": "Should it link to another page, like the menu?",
+          "kind": "group",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "rsvp",
+      "label": "RSVP",
+      "always": true,
+      "guests_get": "A reply form: yes, maybe or no, party size, optional group names.",
+      "ask_if": "Always.",
+      "fields": [
+        {
+          "key": "reply.title",
+          "label": "RSVP page heading",
+          "question": "What should the RSVP page say at the top?",
+          "kind": "text",
+          "required": false,
+          "example": "Pull up a chair",
+          "where": "event.json",
+          "status": "existing",
+          "ask": false,
+          "derive": "\"Will you make it?\"",
+          "derive_by": "code"
+        },
+        {
+          "key": "reply.sub",
+          "label": "RSVP page line",
+          "question": "And a line under it?",
+          "kind": "text",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "ask": false,
+          "derive": "\"Tell us who's coming so we can plan.\"",
+          "derive_by": "code"
+        },
+        {
+          "key": "rsvp.allow_maybe",
+          "label": "Allow \"maybe\"",
+          "question": "Do you want guests to be able to say maybe?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default": true
+        },
+        {
+          "key": "rsvp.ask_kids",
+          "label": "Count kids separately",
+          "question": "Are kids coming? Should we count them separately?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default": true,
+          "hide_when": "policies.kids is no"
+        },
+        {
+          "key": "rsvp.ask_party_names",
+          "label": "Ask who is in the group",
+          "question": "Want to know the names of everyone in each group?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default": true
+        },
+        {
+          "key": "rsvp.ask_plus_one",
+          "label": "Ask about a plus-one",
+          "question": "Can guests bring someone? Should we ask?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "calendar",
+      "label": "Add to calendar",
+      "always": true,
+      "guests_get": "Google and Apple calendar buttons, shown after a yes.",
+      "ask_if": "Always.",
+      "fields": [
+        {
+          "key": "calendar.span",
+          "label": "Calendar block",
+          "question": "Should the calendar entry cover just the main event, or the whole stay?",
+          "kind": "choice",
+          "choices": [
+            "main",
+            "stay"
+          ],
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "only_with": "stay"
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "label": "Potluck menu",
+      "guests_get": "Show guests the menu as it builds. Guests claim a course, pick a suggestion or write their own.",
+      "ask_if": "Guests will bring food or drinks, or you want to coordinate who brings what. Always for Friendsgiving.",
+      "fields": [
+        {
+          "key": "food_slots[].meal",
+          "label": "Meal",
+          "question": "Which meals are potluck?",
+          "kind": "text",
+          "required": true,
+          "example": "Saturday supper",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "food_slots[].label",
+          "label": "Course",
+          "question": "Which courses (apps, mains, sides, dessert, drinks)?",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "food_slots[].suggestions",
+          "label": "Suggestions",
+          "question": "A few ideas for each course?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "images.feature",
+          "label": "Table photo",
+          "question": "Do you have a photo of a table or gathering spot?",
+          "kind": "image",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "dietary",
+      "label": "Dietary needs",
+      "guests_get": "A box on the RSVP to mention allergies or dietary needs; the host sees them next to the menu.",
+      "ask_if": "There is food. Strongly suggested for Friendsgiving.",
+      "fields": [
+        {
+          "key": "rsvp.ask_dietary",
+          "label": "Ask about allergies and diets",
+          "question": "Want guests to tell you about allergies or dietary needs?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default": "on when the dietary module is on"
+        }
+      ]
+    },
+    {
+      "id": "vibe",
+      "label": "Dress code and theme",
+      "guests_get": "A line on the invite and details page: what to wear and what the night is about.",
+      "ask_if": "There is a dress code or theme: ugly sweaters, cocktail attire, festive colors, \"wear sequins\".",
+      "fields": [
+        {
+          "key": "vibe.dress_code",
+          "label": "Dress code",
+          "question": "Is there a dress code?",
+          "kind": "text",
+          "required": false,
+          "example": "Festive cocktail. Sequins encouraged.",
+          "where": "event.json",
+          "status": "new"
+        },
+        {
+          "key": "vibe.theme",
+          "label": "Theme",
+          "question": "Is there a theme?",
+          "kind": "text",
+          "required": false,
+          "example": "Ugly sweater contest",
+          "where": "event.json",
+          "status": "new"
+        }
+      ]
+    },
+    {
+      "id": "gift_exchange",
+      "label": "Gift exchange",
+      "guests_get": "A note on the invite explaining the swap (white elephant, Secret Santa) with the price cap; a checkbox on the RSVP to join.",
+      "ask_if": "The host mentions a gift swap, white elephant, Secret Santa or Yankee swap.",
+      "fields": [
+        {
+          "key": "gift_exchange.kind",
+          "label": "Kind of swap",
+          "question": "What kind of gift swap is it?",
+          "kind": "choice",
+          "choices": [
+            "white_elephant",
+            "secret_santa",
+            "other"
+          ],
+          "required": true,
+          "where": "event.json",
+          "status": "new"
+        },
+        {
+          "key": "gift_exchange.limit",
+          "label": "Price cap",
+          "question": "Is there a price limit?",
+          "kind": "text",
+          "required": false,
+          "example": "$25",
+          "where": "event.json",
+          "status": "new"
+        }
+      ]
+    },
+    {
+      "id": "place",
+      "label": "The place",
+      "guests_get": "A listing-style page: stats, what it offers, rooms and spaces, photos.",
+      "ask_if": "There's a venue worth showing off: a house, a cabin, a rented space.",
+      "fields": [
+        {
+          "key": "house.name",
+          "label": "Place name",
+          "question": "What's the venue called?",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.kicker",
+          "label": "Place subtitle",
+          "question": "A small line above the name, like the town?",
+          "kind": "text",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "ask": false,
+          "derive": "The town or area.",
+          "derive_by": "code"
+        },
+        {
+          "key": "house.stats",
+          "label": "Quick stats",
+          "question": "A few quick facts: bedrooms, baths, how many it sleeps?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.blurb",
+          "label": "Short blurb",
+          "question": "One or two sentences about it?",
+          "kind": "longtext",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.about",
+          "label": "About paragraphs",
+          "question": "Anything more to say about the venue?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.offers",
+          "label": "What it offers",
+          "question": "Amenities or features you want to highlight?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.not_offered",
+          "label": "What it doesn't",
+          "question": "Anything guests shouldn't expect?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.gallery",
+          "label": "Photos",
+          "question": "Have any photos of the venue you want to show?",
+          "kind": "list",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.spaces",
+          "label": "Spaces",
+          "question": "Any spaces to feature, like the kitchen or porch?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "house.video",
+          "label": "Short video loop",
+          "question": "A short muted video of the place?",
+          "kind": "group",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "images.evening",
+          "label": "Cozy-room photo",
+          "question": "A portrait photo of a cozy room?",
+          "kind": "image",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "stay",
+      "label": "Staying over",
+      "guests_get": "Guests pick arrival and departure days and say how they will sleep.",
+      "ask_if": "People might sleep over (common after a late holiday party or NYE).",
+      "needs": [],
+      "fields": [
+        {
+          "key": "stay.earliest_arrival",
+          "label": "Earliest arrival",
+          "question": "What's the earliest day people can arrive?",
+          "kind": "date",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "stay.latest_departure",
+          "label": "Latest departure",
+          "question": "And the last day they can leave?",
+          "kind": "date",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "stay.nights",
+          "label": "Nights",
+          "question": "How many nights?",
+          "kind": "number",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Days between earliest_arrival and latest_departure.",
+          "derive_by": "code"
+        },
+        {
+          "key": "stay_text",
+          "label": "Stay line",
+          "question": "How should the stay read on the page?",
+          "kind": "text",
+          "required": false,
+          "example": "Stay Fri–Sun, optional",
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Built from the stay dates, e.g. \"Stay Fri–Sun, optional\".",
+          "derive_by": "code"
+        },
+        {
+          "key": "stay_days[]",
+          "label": "Stay days",
+          "question": "Which days can guests pick?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "derive": "One day per date from earliest_arrival to latest_departure.",
+          "derive_by": "code"
+        }
+      ]
+    },
+    {
+      "id": "rooms",
+      "label": "Rooms",
+      "guests_get": "Guests can request a room; the host assigns rooms in the Sheet.",
+      "ask_if": "There are beds to hand out and you want to know who needs one.",
+      "needs": [
+        "stay"
+      ],
+      "fields": [
+        {
+          "key": "rooms.list[].id",
+          "label": "Room name",
+          "question": "List the bedrooms.",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "rooms.list[].beds",
+          "label": "Beds",
+          "question": "What beds are in each?",
+          "kind": "text",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "rooms.list[].reserved",
+          "label": "Host's room",
+          "question": "Which one is yours?",
+          "kind": "yesno",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "rooms.total",
+          "label": "Total rooms",
+          "question": "How many rooms in all?",
+          "kind": "number",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Count of rooms.list.",
+          "derive_by": "code"
+        },
+        {
+          "key": "rooms.host_reserved",
+          "label": "Rooms held for host",
+          "question": "How many are yours?",
+          "kind": "number",
+          "required": false,
+          "where": "event.json",
+          "status": "existing",
+          "derive": "Count of rooms.list entries marked reserved.",
+          "derive_by": "code"
+        }
+      ]
+    },
+    {
+      "id": "activities",
+      "label": "Games and activities",
+      "guests_get": "A board to propose, lead or join games and activities at the party, like charades, karaoke or a cookie decorating table.",
+      "ask_if": "The host mentions games, activities, contests or entertainment at the event. (Day trips are for outings away from the place.)",
+      "fields": [
+        {
+          "key": "activities_intro",
+          "label": "Board intro",
+          "question": "A line to introduce the games and activities?",
+          "kind": "longtext",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "derive": "A generic line inviting guests to join in.",
+          "derive_by": "code"
+        },
+        {
+          "key": "activity_seeds[]",
+          "label": "Starter ideas",
+          "question": "A few games or activities to get it started?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "new",
+          "ask": false,
+          "default_from": "activity_ideas"
+        }
+      ]
+    },
+    {
+      "id": "trips",
+      "label": "Day trips board",
+      "guests_get": "A board to propose, lead or join outings.",
+      "ask_if": "A multi-day gathering with free time and things to do together.",
+      "fields": [
+        {
+          "key": "trips_intro",
+          "label": "Board intro",
+          "question": "A line to introduce the day trips?",
+          "kind": "longtext",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "trip_seeds[]",
+          "label": "Starter ideas",
+          "question": "A few ideas to get it started?",
+          "kind": "list",
+          "required": false,
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "policies",
+      "label": "House rules",
+      "guests_get": "Short notes on pets and kids.",
+      "ask_if": "Pets or kids could be a question.",
+      "fields": [
+        {
+          "key": "policies.pets",
+          "label": "Pets welcome",
+          "question": "Are pets welcome?",
+          "kind": "yesno",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "policies.kids",
+          "label": "Kids welcome",
+          "question": "Are kids welcome?",
+          "kind": "yesno",
+          "required": true,
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "reminders",
+      "label": "Reminders",
+      "guests_get": "Opt-in email or text reminders, and a \"still coming?\" check.",
+      "ask_if": "The event is more than a week or two away.",
+      "fields": [
+        {
+          "key": "reminders.remind_days",
+          "label": "Reminder days",
+          "question": "How many days before should we remind people?",
+          "kind": "list",
+          "required": true,
+          "example": "30, 14",
+          "where": "event.json",
+          "status": "existing"
+        },
+        {
+          "key": "reminders.confirm_days",
+          "label": "Confirm days",
+          "question": "When should we ask yes-guests to confirm?",
+          "kind": "list",
+          "required": true,
+          "example": "14, 5",
+          "where": "event.json",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "guest_list",
+      "label": "Guest list",
+      "guests_get": "Who's coming, shown on the site. The host controls visibility.",
+      "ask_if": "Guests would like to see who else is coming.",
+      "fields": [
+        {
+          "key": "show_guest_list",
+          "label": "Who can be seen",
+          "question": "Should guests see who's coming: nobody, only yes-guests, or everyone invited?",
+          "kind": "choice",
+          "choices": [
+            "off",
+            "confirmed",
+            "all"
+          ],
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        },
+        {
+          "key": "show_count",
+          "label": "Show headcount",
+          "question": "Show the total number of people coming?",
+          "kind": "yesno",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "host_private",
+      "label": "Private details (host)",
+      "always": true,
+      "guests_get": "Address and arrival notes, shown only after a yes. Kept in the Google Sheet, never in the site's files.",
+      "ask_if": "Always. Collected after launch, not in the interview.",
+      "fields": [
+        {
+          "key": "address",
+          "label": "Street address",
+          "question": "(Later, in your Sheet.) What's the street address?",
+          "kind": "text",
+          "required": true,
+          "where": "sheet",
+          "status": "existing"
+        },
+        {
+          "key": "directions",
+          "label": "Arrival notes",
+          "question": "(Later, in your Sheet.) Parking, gate code, arrival notes?",
+          "kind": "longtext",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        },
+        {
+          "key": "host_email",
+          "label": "Your email",
+          "question": "(Later, in your Sheet.) Where should alerts go?",
+          "kind": "text",
+          "required": true,
+          "where": "sheet",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "host_alerts",
+      "label": "Alerts to the host",
+      "always": true,
+      "guests_get": "Nothing. You get an email or phone alert when someone RSVPs, cancels or asks for a room.",
+      "ask_if": "Always. Defaults are fine for most hosts.",
+      "fields": [
+        {
+          "key": "notify_*",
+          "label": "Which alerts",
+          "question": "Want an email or phone alert when guests RSVP, cancel, claim a dish or any other alerts?",
+          "kind": "group",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        }
+      ]
+    },
+    {
+      "id": "guest_emails",
+      "label": "Emails to guests",
+      "always": true,
+      "guests_get": "An invite email and a \"You're in!\" confirmation with a calendar button.",
+      "ask_if": "Always. Wording can be customized in the Sheet.",
+      "fields": [
+        {
+          "key": "guest_from_name",
+          "label": "Sender name",
+          "question": "What name should guests see on your emails?",
+          "kind": "text",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        },
+        {
+          "key": "guest_reply_to",
+          "label": "Reply-to",
+          "question": "Where should replies go?",
+          "kind": "text",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        },
+        {
+          "key": "guest_*_email",
+          "label": "Which emails to send",
+          "question": "Send the confirmation email on a first yes?",
+          "kind": "group",
+          "required": false,
+          "where": "sheet",
+          "status": "existing"
+        }
+      ]
+    }
+  ]
+}

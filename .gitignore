@@ -1,0 +1,8 @@
+# Personal notes, roadmap, build logs — never published
+_private/
+build-plans/
+.remember/
+.DS_Store
+.party-lights/
+/event.json
+.playwright-mcp/

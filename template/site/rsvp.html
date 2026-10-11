@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RSVP · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a><nav id="nav"></nav></div></header>
+  <main>
+    <form id="form" class="narrow" hidden>
+      <div class="page-head"><p class="eyebrow" id="kicker">RSVP</p>
+        <h1 id="heading">Will you make it?</h1>
+        <p>Tell us who's coming, when you'll arrive, and where you'd like to sleep. You can change it anytime.</p></div>
+      <div class="choices seg" role="radiogroup" aria-label="RSVP">
+        <label class="choice"><input type="radio" name="status" value="yes" required><span>Yes</span></label>
+        <label class="choice" id="maybeOpt"><input type="radio" name="status" value="maybe"><span>Maybe</span></label>
+        <label class="choice"><input type="radio" name="status" value="no"><span>Can't make it</span></label>
+      </div>
+
+      <div id="more" class="card">
+        <div class="row">
+          <div><label for="adults">Adults</label><input type="number" id="adults" name="adults" min="1" max="20" value="1" inputmode="numeric"></div>
+          <div id="kidsWrap"><label for="kids">Kids</label><input type="number" id="kids" name="kids" min="0" max="20" value="0" inputmode="numeric"></div>
+        </div>
+        <p class="muted" id="plusOneHint" hidden>Count anyone you're bringing.</p>
+        <div id="partyWrap">
+          <label for="party_names">Who's in your group? <span class="muted">(optional)</span></label>
+          <input type="text" id="party_names" name="party_names" maxlength="200" placeholder="Names of everyone coming">
+        </div>
+        <div id="dietaryWrap" hidden>
+          <label for="dietary">Allergies or dietary needs <span class="muted">(optional)</span></label>
+          <input type="text" id="dietary" name="dietary" maxlength="200" placeholder="Nut allergy, vegetarian, gluten-free…">
+        </div>
+
+        <div id="stayWrap">
+        <div class="row">
+          <div><label for="arrive">Arriving</label><select id="arrive" name="arrive"></select></div>
+          <div><label for="depart">Leaving</label><select id="depart" name="depart"></select></div>
+        </div>
+
+        <label>Sleeping</label>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="sleep" value="anywhere"><span>Down to sleep anywhere</span></label>
+          <label class="choice"><input type="radio" name="sleep" value="request_room"><span>Request a room</span></label>
+          <label class="choice"><input type="radio" name="sleep" value="not_staying"><span>Not staying over</span></label>
+        </div>
+        <div id="reasonWrap" hidden>
+          <label for="room_reason">Why a room? <span class="muted">(kids, early flight, back trouble…)</span></label>
+          <textarea id="room_reason" name="room_reason" maxlength="500"></textarea>
+          <p class="muted" id="rooms"></p>
+        </div>
+        </div>
+
+        <div id="remindWrap">
+          <label>Reminders</label>
+          <label class="check"><input type="checkbox" name="remind_email"> Email me <span class="remind-days"></span> days out</label>
+          <label class="check"><input type="checkbox" name="remind_text"> Text me <span class="remind-days"></span> days out</label>
+        </div>
+      </div>
+
+      <p class="actions"><button class="btn primary" type="submit">Send RSVP</button></p>
+      <p class="actions" id="next" hidden><a class="btn primary" id="nextLink" href="details.html">See the details and address</a></p>
+    </form>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      const ev = await App.event();
+      const me = await App.boot();
+      if (!me) return;
+      const form = $('#form');
+      const days = (ev.stay_days || []).map((d) => `<option value="${d.id}">${esc(d.label)}</option>`).join('');
+      form.arrive.innerHTML = '<option value="">Not sure yet</option>' + days;
+      form.depart.innerHTML = '<option value="">Not sure yet</option>' + days;
+      const opts = App.rsvpOpts(ev);
+      $('#maybeOpt').hidden = !opts.maybe;
+      $('#kidsWrap').hidden = !opts.kids;
+      $('#partyWrap').hidden = !opts.partyNames;
+      $('#dietaryWrap').hidden = !opts.dietary;
+      $('#plusOneHint').hidden = !opts.plusOne;
+      $('#stayWrap').hidden = !App.on(ev, 'stay');
+      $('#remindWrap').hidden = !App.on(ev, 'reminders');
+      if (App.on(ev, 'rooms') && ev.rooms) {
+        const guestRooms = ev.rooms.list.filter((r) => !r.reserved);
+        const beds = {};
+        guestRooms.forEach((r) => (beds[r.beds] = (beds[r.beds] || 0) + 1));
+        $('#rooms').textContent = `${guestRooms.length} guest rooms (${Object.entries(beds).map(([b, n]) => `${n}× ${b}`).join(', ')}). The host assigns rooms and will let you know.`;
+      } else form.querySelector('[name=sleep][value=request_room]').closest('label').hidden = true;
+
+      $('#kicker').textContent = `RSVP · ${ev.title}`;
+      const rd = ev.reminders?.remind_days || [];
+      document.querySelectorAll('.remind-days').forEach((s) => (s.textContent = rd.length > 1 ? `${rd.slice(0, -1).join(', ')} and ${rd.at(-1)}` : rd[0]));
+      const g = me.guest;
+      $('#heading').textContent = `Will you make it, ${g.name.split(' ')[0]}?`;
+      if (g.status !== 'invited') {
+        form.querySelector(`[name=status][value=${g.status}]`).checked = true;
+        for (const k of ['adults', 'kids', 'party_names', 'dietary', 'arrive', 'depart', 'room_reason']) if (g[k] !== '' && g[k] != null) form[k].value = g[k];
+        if (g.sleep) form.querySelector(`[name=sleep][value=${g.sleep}]`).checked = true;
+        form.remind_email.checked = g.remind_email === true || g.remind_email === 'true';
+        form.remind_text.checked = g.remind_text === true || g.remind_text === 'true';
+      }
+      const pre = App.params.get('s');
+      if (['yes', 'maybe', 'no'].includes(pre)) form.querySelector(`[name=status][value=${pre}]`).checked = true;
+      const sync = () => {
+        $('#more').hidden = form.status.value === 'no';
+        $('#reasonWrap').hidden = form.sleep.value !== 'request_room';
+      };
+      form.addEventListener('change', sync);
+      sync();
+      form.hidden = false;
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        btn.disabled = true;
+        const f = new FormData(form);
+        const rsvp = Object.fromEntries(f);
+        rsvp.remind_email = f.has('remind_email');
+        rsvp.remind_text = f.has('remind_text');
+        try {
+          const out = await App.api('rsvp', { rsvp });
+          App.nav(out);
+          if (rsvp.status === 'yes') {
+            // Apps Script's sandbox may block top navigation without a fresh click, so the link below is the fallback.
+            $('#nextLink').href = App.link('details.html');
+            $('#next').hidden = false;
+            App.toast("You're in!");
+            try { (App.gas ? window.top : window).location.href = App.link('details.html'); } catch { /* use the visible link */ }
+          } else App.toast(rsvp.status === 'no' ? "Thanks for letting us know. We'll miss you!" : 'Got it. Update anytime.');
+        } catch (err) {
+          App.toast(err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

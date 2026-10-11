@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guests · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a><nav id="nav"></nav></div></header>
+  <main id="main"></main>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      const me = await App.boot();
+      if (!me) return;
+      const b = await App.api('board');
+      const label = { yes: 'Coming', maybe: 'Maybe', invited: 'Invited' };
+      let html = `<div class="page-head"><p class="eyebrow">The guest list</p><h1>Who's <em>coming</em></h1>`
+        + (b.count != null ? `<p><span class="headcount">${b.count}</span> people coming so far</p>` : '') + '</div>';
+      if (b.guests) {
+        html += b.guests.length
+          ? '<ul class="rows narrow">' + b.guests.map((x) =>
+              `<li><span class="big" style="margin:0">${esc(x.name)}${x.party > 1 ? ` <span class="muted">+${x.party - 1}</span>` : ''}</span>
+                <span class="chip ${x.status}">${label[x.status]}</span></li>`).join('') + '</ul>'
+          : '<p class="muted">Be the first to RSVP!</p>';
+      }
+      $('#main').innerHTML = b.count != null || b.guests ? html
+        : '<section class="gate"><p class="eyebrow">Guests</p><h1>The list is private</h1><p>The host is keeping this one a surprise.</p></section>';
+    })();
+  </script>
+</body>
+</html>

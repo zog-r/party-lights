@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The house · Winter Supper at the Cabin</title>
+    <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root { --hair: rgb(242 178 92 / 24%); }
+    .sc { font: 600 .76rem var(--body); letter-spacing: .22em; text-transform: uppercase; color: var(--glow); }
+    h1 { font-weight: 300; font-size: clamp(2.6rem, 6vw, 4.4rem); letter-spacing: -.03em; line-height: 1; margin: 8px 0 14px; }
+    h2 { font-weight: 300; font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -.02em; margin: 0 0 24px; }
+    .facts { display: flex; flex-wrap: wrap; color: var(--mist); font-size: 1.05rem; margin: 0 0 28px; }
+    .facts span + span::before { content: '·'; margin: 0 .6em; color: var(--glow); }
+
+    .gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 240px 240px; gap: 8px; border-radius: 14px; overflow: hidden; }
+    .gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery .g0 { grid-row: 1 / 3; }
+
+    section.block { padding-top: 72px; margin-top: 72px; border-top: 1px solid var(--hair); }
+    .about { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(32px, 6vw, 88px); }
+    .about p { color: var(--mist); font-size: 1.05rem; line-height: 1.75; margin: 0 0 16px; max-width: 60ch; }
+    .host-note { border: 1px solid var(--hair); border-radius: 12px; padding: 22px; align-self: start; }
+    .host-note p { margin: 8px 0 16px; color: var(--linen); }
+
+    .byday { display: grid; grid-template-columns: minmax(0, 380px) 1fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+    .byday figure { margin: 0; }
+    .byday video { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 6px; display: block; }
+    .byday p { color: var(--mist); font-size: 1.05rem; line-height: 1.7; max-width: 44ch; }
+    .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+    .room { border: 1px solid var(--hair); border-radius: 12px; padding: 20px; }
+    .room svg { width: 34px; height: 34px; color: var(--glow); }
+    .room h3 { font: 400 1.2rem var(--display); margin: 12px 0 4px; }
+    .room p { margin: 0; color: var(--mist); }
+    .room.reserved { opacity: .6; }
+
+    .offers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; list-style: none; padding: 0; margin: 0; }
+    .offers li { display: flex; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--hair); font-size: 1.05rem; }
+    .offers li::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px rgb(242 178 92 / 70%); flex: none; }
+    .offers li.no { color: var(--mist); }
+    .offers li.no::before { background: none; border: 1px solid var(--mist); box-shadow: none; }
+
+    .space { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 5vw, 72px); align-items: center; margin-bottom: 64px; }
+    .space:nth-of-type(even) figure { order: 2; }
+    .space figure { margin: 0; }
+    .space img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; display: block; }
+    .space h3 { font: 300 clamp(1.8rem, 3.4vw, 2.5rem) var(--display); letter-spacing: -.02em; margin: 8px 0 12px; }
+    .space p { color: var(--mist); font-size: 1.05rem; line-height: 1.7; max-width: 44ch; margin: 0; }
+
+    @media (max-width: 760px) {
+      .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: 260px 150px 150px; }
+      .gallery .g0 { grid-column: 1 / -1; grid-row: auto; }
+      .gallery .g4 { display: none; }
+      .about, .space, .byday { grid-template-columns: 1fr; }
+      .byday figure { max-width: 320px; }
+      .space:nth-of-type(even) figure { order: 0; }
+      .offers { grid-template-columns: 1fr; }
+      section.block { padding-top: 48px; margin-top: 48px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a><nav id="nav"></nav></div></header>
+  <main>
+    <p class="sc" id="kicker"></p>
+    <h1 id="name">&nbsp;</h1>
+    <p class="facts" id="facts"></p>
+
+    <div class="gallery" id="gallery"></div>
+
+    <section class="block about">
+      <div>
+        <h2>About the house</h2>
+        <div id="about"></div>
+      </div>
+      <aside class="host-note">
+        <span class="sc">Want a bed?</span>
+        <p>Rooms are first come, first served, and the host sorts out who sleeps where. Tell us what you need when you RSVP.</p>
+        <a class="btn primary" href="rsvp.html" data-link>RSVP &amp; request a room</a>
+      </aside>
+    </section>
+
+    <section class="block byday" id="video" hidden></section>
+
+    <section class="block">
+      <h2>Where you'll sleep</h2>
+      <div class="rooms" id="rooms"></div>
+    </section>
+
+    <section class="block">
+      <h2>What this place offers</h2>
+      <ul class="offers" id="offers"></ul>
+    </section>
+
+    <section class="block">
+      <h2>The spaces</h2>
+      <div id="spaces"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      document.querySelectorAll('[data-link]').forEach((a) => (a.href = App.link(a.getAttribute('href'))));
+      const ev = await App.event();
+      // Module off: boot() renders the "Not part of this event" card.
+      if (!ev.house || !App.on(ev, 'place')) return App.boot();
+      const h = ev.house;
+      $('#kicker').textContent = h.kicker;
+      $('#name').textContent = h.name;
+      $('#facts').innerHTML = (h.stats || []).map((x) => `<span>${esc(x)}</span>`).join('');
+      const pic = (im, cls = '') => `<img${cls ? ` class="${cls}"` : ''} src="${esc(im.src)}" alt="${esc(im.alt)}">`;
+      $('#gallery').innerHTML = [ev.images.feature, ...(h.gallery || [])].filter(Boolean).slice(0, 5).map((im, i) => pic(im, i === 0 ? 'g0' : i === 4 ? 'g4' : '')).join('');
+      $('#about').innerHTML = (h.about || []).map((p) => `<p>${esc(p)}</p>`).join('');
+      $('#offers').innerHTML = (h.offers || []).map((x) => `<li>${esc(x)}</li>`).join('') + (h.not_offered || []).map((x) => `<li class="no">${esc(x)}</li>`).join('');
+      $('#spaces').innerHTML = (h.spaces || []).map((sp) => `<div class="space"><figure>${pic(sp)}</figure>
+        <div><span class="sc">${esc(sp.label)}</span><h3>${esc(sp.title)}</h3><p>${esc(sp.text)}</p></div></div>`).join('');
+      if (h.video) {
+        const v = h.video;
+        $('#video').innerHTML = `<figure><video autoplay muted loop playsinline poster="${esc(v.poster)}" aria-hidden="true"><source src="${esc(v.src)}" type="video/mp4"></video></figure>
+          <div><span class="sc">${esc(v.label)}</span><h2>${esc(v.title)}</h2><p>${esc(v.text)}</p></div>`;
+        $('#video').hidden = false;
+      }
+      const bed = '<svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 27V9M30 27v-8M4 19h26M4 23h26"/><rect x="7" y="13" width="8" height="6" rx="2"/></svg>';
+      $('#rooms').innerHTML = (ev.rooms?.list || []).map((r, i) => `
+        <div class="room${r.reserved ? ' reserved' : ''}">${bed}
+          <h3>${r.reserved ? "Host's room" : `Bedroom ${i + 1}`}</h3><p>${esc(r.beds)}</p></div>`).join('')
+        + `<div class="room">${bed}<h3>Couches &amp; more</h3><p>Ample couch space for anyone down to sleep anywhere</p></div>`;
+      await App.boot({ gate: false });
+    })();
+  </script>
+</body>
+</html>

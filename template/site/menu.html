@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menu · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a><nav id="nav"></nav></div></header>
+  <main>
+    <div class="page-head"><p class="eyebrow">The menu · potluck</p>
+      <h1>What's on <em>the table</em></h1>
+      <p>Every dish someone's bringing lands on the table. Tap an empty plate to claim a spot.</p></div>
+    <div class="table-wrap" id="table" aria-live="polite"></div>
+
+    <form class="card narrow" id="add" hidden>
+      <h2>Bring something</h2>
+      <label for="slot">For</label>
+      <select id="slot" name="slot"></select>
+      <label>Ideas</label>
+      <div class="choices" id="ideas"></div>
+      <label for="item">Or write your own</label>
+      <input type="text" id="item" name="item" maxlength="80" placeholder="e.g. Grandma's cornbread" required>
+      <p class="actions"><button class="btn primary" type="submit">Add to the table</button></p>
+    </form>
+    <section class="card narrow" id="mine" hidden></section>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      const ev = await App.event();
+      if (ev.images.feature) $('#table').style.setProperty('--ground', `url("${ev.images.feature.src}")`);
+      const me = await App.boot();
+      if (!me) return;
+      const canAdd = ['yes', 'maybe'].includes(me.guest.status);
+      const form = $('#add');
+      form.elements.slot.innerHTML = ev.food_slots.map((s) => `<option value="${s.id}">${esc(s.meal === s.label ? s.label : s.meal + ': ' + s.label)}</option>`).join('');
+
+      let menu = [];
+      function render() {
+        const meals = [...new Set(ev.food_slots.map((s) => s.meal))];
+        $('#table').innerHTML = meals.map((meal) => {
+          const slots = ev.food_slots.filter((s) => s.meal === meal);
+          const plates = slots.map((s) => {
+            const items = menu.filter((m) => m.slot === s.id);
+            const sub = slots.length > 1 ? `<small>${esc(s.label)}</small>` : '';
+            return items.map((m) => `<div class="plate${m.mine ? ' mine' : ''}"><div><b>${esc(m.item)}</b>${sub}<small>${esc(m.by)}</small></div></div>`).join('')
+              + (canAdd ? `<button type="button" class="plate empty" data-slot="${s.id}" aria-label="Add a dish for ${esc(s.label)}">+ ${esc(s.label)}</button>` : '');
+          }).join('');
+          return `<div class="course"><h3>${esc(meal)}</h3><div class="plates">${plates || '<span class="plate empty">Nothing yet</span>'}</div></div>`;
+        }).join('');
+        const mine = menu.filter((m) => m.mine);
+        $('#mine').hidden = !mine.length;
+        $('#mine').innerHTML = '<h2>You\'re bringing</h2><ul class="rows">' + mine.map((m) =>
+          `<li><span>${esc(m.item)}</span><button class="btn ghost small" data-remove="${m.id}">Remove</button></li>`).join('') + '</ul>';
+        ideas();
+      }
+      function ideas() {
+        const slot = ev.food_slots.find((s) => s.id === form.elements.slot.value);
+        const taken = new Set(menu.filter((m) => m.slot === slot.id).map((m) => m.item.toLowerCase()));
+        $('#ideas').innerHTML = (slot.suggestions || []).filter((x) => !taken.has(x.toLowerCase()))
+          .map((x) => `<button type="button" class="btn ghost small" data-idea="${esc(x)}">${esc(x)}</button>`).join('')
+          || '<span class="muted">All claimed. Write your own!</span>';
+      }
+      async function load() {
+        const b = await App.api('board');
+        const mineIds = new Map(me.food.map((f) => [f.slot + '|' + f.item, f.id]));
+        menu = b.menu.map((m) => ({ ...m, id: m.mine ? mineIds.get(m.slot + '|' + m.item) : null }));
+        render();
+      }
+
+      form.elements.slot.addEventListener('change', ideas);
+      document.addEventListener('click', async (e) => {
+        const t = e.target.closest('[data-slot],[data-idea],[data-remove]');
+        if (!t) return;
+        if (t.dataset.slot) { form.elements.slot.value = t.dataset.slot; ideas(); form.scrollIntoView({ behavior: 'smooth' }); form.item.focus({ preventScroll: true }); }
+        if (t.dataset.idea) form.item.value = t.dataset.idea;
+        if (t.dataset.remove) {
+          await App.api('removeFood', { id: t.dataset.remove });
+          me.food = me.food.filter((f) => f.id !== t.dataset.remove);
+          await load();
+        }
+      });
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const { id } = await App.api('addFood', { slot: form.elements.slot.value, item: form.item.value });
+          me.food.push({ id, slot: form.elements.slot.value, item: form.item.value.trim() });
+          form.item.value = '';
+          App.toast('Added to the table!');
+          await load();
+        } catch (err) { App.toast(err.message); }
+      });
+
+      form.hidden = !canAdd;
+      if (!canAdd) $('#table').insertAdjacentHTML('afterend', `<p class="muted" style="margin-top:20px"><a class="more" href="${App.link('rsvp.html')}">RSVP</a> to claim a dish.</p>`);
+      await load();
+    })();
+  </script>
+</body>
+</html>

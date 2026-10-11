@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Text the Invite · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="narrow">
+    <p><a id="go" class="btn primary" href="#" target="_top">Text the Invite</a></p>
+  </main>
+  <script src="app.js"></script>
+  <script>
+    // Gmail strips sms: links, so host emails link here (https) and this hands off to Messages.
+    const q = App.params;
+    const to = (q.get('to') || '').replace(/[^\d+]/g, '');
+    const href = `sms:${to}?&body=${encodeURIComponent(q.get('body') || '')}`;
+    document.getElementById('go').href = href;
+    // Apps Script's frame blocks opening Messages without a tap (tested live on iOS), so there the button is the way in.
+    if (to && !App.gas) location.replace(href);
+  </script>
+</body>
+</html>

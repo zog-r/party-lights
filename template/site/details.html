@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Details · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a><nav id="nav"></nav></div></header>
+  <main id="main"></main>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      const ev = await App.event();
+      const me = await App.boot();
+      if (!me) return;
+      const main = $('#main');
+      if (me.guest.status !== 'yes') {
+        main.innerHTML = `<section class="gate"><p class="eyebrow">Details</p><h1>Unlocks when you RSVP yes</h1>
+          <p>The address, directions, and calendar invite appear here once you're in.</p>
+          <a class="btn primary" href="${App.link('rsvp.html')}">RSVP</a></section>`;
+        return;
+      }
+      const cal = App.calendar(ev, me);
+      const g = me.guest;
+      const days = ev.stay_days || [];
+      const confirmed = (me.remind_days || []).filter((d) => g['confirmed_' + d])
+        .map((d) => `<span class="chip yes">Confirmed · ${d}-day check</span>`).join(' ');
+      const mapUrl = me.address ? 'https://maps.apple.com/?q=' + encodeURIComponent(me.address) : '';
+      const sleep = { request_room: 'Room requested' + (g.assigned_room ? `, assigned: ${esc(g.assigned_room)}` : ' (the host will confirm)'),
+        anywhere: 'Down to sleep anywhere', not_staying: 'Not staying over' }[g.sleep] || '';
+      // Static notes from the host; each shows only when its module is on and has something to say.
+      const section = (label, html) => `<section class="card split"><p class="eyebrow">${label}</p><div>${html}</div></section>`;
+      const { vibe, gift_exchange: gift } = ev;
+      const swap = { white_elephant: 'White elephant', secret_santa: 'Secret Santa', other: 'Gift swap' };
+      const extras = [
+        App.on(ev, 'vibe') && (vibe?.dress_code || vibe?.theme) && section('The vibe',
+          [vibe.theme && `<p class="big">${esc(vibe.theme)}</p>`, vibe.dress_code && `<p class="muted">Dress code: ${esc(vibe.dress_code)}</p>`].filter(Boolean).join('')),
+        App.on(ev, 'gift_exchange') && gift && section('Gift exchange',
+          `<p class="big">${swap[gift.kind]}</p>${gift.limit ? `<p class="muted">Keep it to ${esc(gift.limit)}.</p>` : ''}`),
+        App.on(ev, 'activities') && ev.activity_seeds?.length && section('Games & activities',
+          (ev.activities_intro ? `<p>${esc(ev.activities_intro)}</p>` : '') + ev.activity_seeds.map((a) =>
+            `<h3>${esc(a.title)}</h3>${a.details ? `<p class="muted">${esc(a.details)}</p>` : ''}`).join('')),
+      ].filter(Boolean).join('');
+      main.innerHTML = `
+        <div class="page-head"><p class="eyebrow">You're coming</p>
+          <h1>See you <em>there</em></h1>
+          <p>${esc(ev.when_text)}${days.length ? ` · stay ${esc(days[0].label)} – ${esc(days[days.length - 1].label)}` : ''}</p>
+          ${confirmed ? `<p style="margin-top:16px">${confirmed}</p>` : ''}</div>
+        <section class="card split">
+          <p class="eyebrow">Where</p>
+          <div>${me.address ? `<p class="big">${esc(me.address)}</p>
+            <p class="actions"><a class="btn ghost" href="${mapUrl}" target="_blank" rel="noopener">Open in Maps</a></p>`
+            : '<p class="muted big">The host will post the address here soon. Check back!</p>'}
+          ${me.directions ? `<h3 style="margin-top:36px">Getting in</h3><p class="pre">${esc(me.directions)}</p>` : ''}</div>
+        </section>
+        <section class="card split">
+          <p class="eyebrow">Calendar</p>
+          <div><p class="actions" style="margin-top:0">
+            <a class="btn" href="${cal.google}" target="_blank" rel="noopener">Google Calendar</a>
+            <a class="btn ghost" href="${cal.ics}" download="${ev.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.ics">Apple / iPhone (.ics)</a></p>
+          ${me.address ? '' : '<p class="muted">Tip: add it again after the address is posted so your calendar has it.</p>'}</div>
+        </section>
+        <section class="card split">
+          <p class="eyebrow">Your RSVP</p>
+          <div><p class="big">${esc(g.adults)} adult(s), ${esc(g.kids || 0)} kid(s)${g.party_names ? ': ' + esc(g.party_names) : ''}</p>
+          ${sleep ? `<p class="muted">${sleep}</p>` : ''}
+          ${g.dietary ? `<p class="muted">Dietary: ${esc(g.dietary)}</p>` : ''}
+          <p><a class="more" href="${App.link('rsvp.html')}">Change your RSVP</a></p></div>
+        </section>${extras}`;
+    })();
+  </script>
+</body>
+</html>

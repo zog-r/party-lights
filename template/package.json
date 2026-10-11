@@ -1,0 +1,15 @@
+{
+  "name": "my-event",
+  "private": true,
+  "scripts": {
+    "pretest": "node scripts/gen-event.js",
+    "test": "node --test gas/*.test.js scripts/*.test.js",
+    "gen": "node scripts/gen-event.js",
+    "dev": "node scripts/dev-api.js",
+    "serve": "npx -y serve site -l 5173",
+    "push": "node scripts/gen-event.js && cd gas && npx -y @google/clasp push -f",
+    "deploy": "node scripts/deploy.js",
+    "google": "node scripts/google-setup.js",
+    "host": "node scripts/host.js"
+  }
+}

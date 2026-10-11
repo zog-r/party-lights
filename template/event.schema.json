@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Party Lights event",
+  "description": "Everything that makes one event app different from another. site/event.json follows this; scripts/validate-event.js checks it plus the cross-field rules a schema can't express.",
+  "type": "object",
+  "required": ["title", "intro", "area", "timezone", "main", "images"],
+  "properties": {
+    "event_type": { "enum": ["thanksgiving", "christmas", "hanukkah", "kwanzaa", "nye", "holiday_party"], "description": "Which holiday. Picks the defaults in fields.json." },
+    "holiday_name": { "type": "string", "description": "For a holiday not in the list, e.g. \"Diwali\"." },
+    "features": {
+      "type": "array", "items": { "type": "string", "pattern": "^[a-z_]+$" },
+      "description": "Ids of the optional modules (see fields.json) this event uses. Always-on modules need no entry. Absent = every module whose data is present."
+    },
+    "rsvp": {
+      "type": "object",
+      "description": "What the RSVP form asks. Everything defaults to on except ask_plus_one; ask_dietary defaults to on when the dietary module is.",
+      "properties": {
+        "allow_maybe": { "type": "boolean" }, "ask_kids": { "type": "boolean" }, "ask_party_names": { "type": "boolean" },
+        "ask_plus_one": { "type": "boolean" }, "ask_dietary": { "type": "boolean" }
+      }
+    },
+    "vibe": { "type": "object", "properties": { "dress_code": { "type": "string" }, "theme": { "type": "string" } } },
+    "gift_exchange": {
+      "type": "object", "required": ["kind"],
+      "properties": { "kind": { "enum": ["white_elephant", "secret_santa", "other"] }, "limit": { "type": "string", "description": "Price cap, e.g. \"$25\"." } }
+    },
+    "activities_intro": { "type": "string" },
+    "activity_seeds": {
+      "type": "array",
+      "items": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string" }, "details": { "type": "string" } } }
+    },
+    "title": { "type": "string", "minLength": 1, "description": "Event name, e.g. \"Winter Supper at the Cabin\"." },
+    "title_em": { "type": "string", "description": "Optional ending of the title to set in the hero italic, e.g. \"at the Cabin\". Must be a suffix of title." },
+    "brand": { "type": "string", "minLength": 1, "description": "Short name in the top-left of every page." },
+    "tagline": { "type": "string", "minLength": 1, "description": "One sentence; used for link previews." },
+    "intro": { "type": "string", "minLength": 1, "description": "Two or three sentences under \"The weekend\"." },
+    "description": { "type": "string", "description": "The full plan, behind \"Read the full plan\"." },
+    "area": { "type": "string", "minLength": 1, "description": "Public place name. Never the street address (that lives in the Sheet, shown only to RSVP-yes guests)." },
+    "when_text": { "type": "string", "minLength": 1, "description": "Human date line, e.g. \"Sat, Dec 19 · 5 PM\"." },
+    "stay_text": { "type": "string", "description": "e.g. \"Stay Fri–Sun, optional\"." },
+    "timezone": { "type": "string", "pattern": "^[A-Za-z_]+/[A-Za-z_/]+$", "description": "IANA zone of the venue, e.g. America/Denver." },
+    "site_url": { "type": "string", "pattern": "^(https://[^/]+(/.*[^/])?)?$", "description": "Optional public URL, no trailing slash. Makes link-preview images absolute." },
+    "api_url": { "type": "string", "pattern": "^(https://script\\.google\\.com/macros/s/[\\w-]+/exec)?$", "description": "Apps Script web app /exec URL. Empty until the first deploy." },
+    "main": {
+      "type": "object", "required": ["start", "end", "label"],
+      "properties": {
+        "start": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$", "description": "Local wall-clock time in timezone." },
+        "end": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$" },
+        "label": { "type": "string" }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "description": "Optional. span \"stay\" (default) makes the calendar invite an all-day block across the whole stay window; \"main\" keeps just the main event's time.",
+      "properties": { "span": { "enum": ["stay", "main"] } }
+    },
+    "stay": {
+      "type": "object", "required": ["earliest_arrival", "latest_departure"],
+      "properties": {
+        "earliest_arrival": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "latest_departure": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "nights": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "policies": {
+      "type": "object", "required": ["pets", "kids"],
+      "properties": { "pets": { "type": "boolean" }, "kids": { "type": "boolean" } }
+    },
+    "images": {
+      "type": "object", "required": ["hero"],
+      "description": "hero: landscape ~1536x1024. feature and evening: portrait 4:5, ~1100 wide. feature is also the menu table's background.",
+      "properties": {
+        "hero": { "$ref": "#/$defs/image" },
+        "feature": { "$ref": "#/$defs/image" },
+        "evening": { "$ref": "#/$defs/image" }
+      }
+    },
+    "schedule": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["date", "title", "text"],
+        "properties": {
+          "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "title": { "type": "string" },
+          "text": { "type": "string" },
+          "link": { "type": "object", "required": ["label", "href"], "properties": { "label": { "type": "string" }, "href": { "type": "string" } } }
+        }
+      }
+    },
+    "house": {
+      "type": "object", "required": ["name"],
+      "properties": {
+        "kicker": { "type": "string" },
+        "name": { "type": "string" },
+        "stats": { "type": "array", "items": { "type": "string" } },
+        "blurb": { "type": "string" },
+        "about": { "type": "array", "items": { "type": "string" } },
+        "offers": { "type": "array", "items": { "type": "string" } },
+        "not_offered": { "type": "array", "items": { "type": "string" } },
+        "gallery": { "type": "array", "items": { "$ref": "#/$defs/image" }, "description": "Up to 4; the feature image leads the gallery." },
+        "spaces": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["src", "alt", "label", "title", "text"],
+            "properties": { "src": { "type": "string" }, "alt": { "type": "string" }, "label": { "type": "string" }, "title": { "type": "string" }, "text": { "type": "string" } }
+          }
+        },
+        "video": {
+          "type": "object", "required": ["src", "poster", "label", "title", "text"], "description": "Optional short muted loop (scripts/grade-stills.sh makes one).",
+          "properties": { "src": { "type": "string" }, "poster": { "type": "string" }, "label": { "type": "string" }, "title": { "type": "string" }, "text": { "type": "string" } }
+        }
+      }
+    },
+    "reply": {
+      "type": "object",
+      "properties": { "title": { "type": "string" }, "sub": { "type": "string" } }
+    },
+    "trips_intro": { "type": "string" },
+    "rooms": {
+      "type": "object", "required": ["list"],
+      "properties": {
+        "total": { "type": "integer" },
+        "host_reserved": { "type": "integer" },
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "beds"],
+            "properties": { "id": { "type": "string", "pattern": "^[a-z0-9_]+$" }, "beds": { "type": "string" }, "reserved": { "type": "boolean" } }
+          }
+        }
+      }
+    },
+    "stay_days": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "label"],
+        "properties": { "id": { "type": "string", "pattern": "^[a-z0-9_]+$" }, "label": { "type": "string" } }
+      }
+    },
+    "food_slots": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "meal", "label"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "meal": { "type": "string", "description": "Slots with the same meal render as one course." },
+          "label": { "type": "string" },
+          "suggestions": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "trip_seeds": {
+      "type": "array",
+      "items": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string" }, "details": { "type": "string" } } }
+    },
+    "reminders": {
+      "type": "object", "required": ["remind_days", "confirm_days"],
+      "properties": {
+        "remind_days": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "description": "Days before the event to send opt-in reminders." },
+        "confirm_days": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "description": "Days before the event to ask RSVP-yes guests to confirm. Each becomes a confirmed_<n> column." }
+      }
+    }
+  },
+  "$defs": {
+    "image": {
+      "type": "object", "required": ["src", "alt"],
+      "properties": { "src": { "type": "string", "pattern": "^assets/" }, "alt": { "type": "string", "minLength": 1 } }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Host · Winter Supper at the Cabin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+    th { font: 600 .66rem var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--mist); }
+    th, td { text-align: left; padding: 12px 10px 12px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+    td .btn { margin: 0 4px 4px 0; }
+    .scroll { overflow-x: auto; }
+    .stat { font: 300 clamp(2.6rem, 5vw, 3.6rem)/1 var(--display); letter-spacing: -.03em; margin-bottom: 6px; }
+    .grid .card { padding: 28px 0; }
+    .log p { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <header class="site"><div class="inner"><span class="brand">Host dashboard</span></div></header>
+  <main id="main"><p class="muted">Loading…</p></main>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const { $, esc } = App;
+      const key = App.params.get('k');
+      const ev = await App.event();
+      let d;
+      try { d = await App.api('admin', { key }); }
+      catch { $('#main').innerHTML = '<section class="gate"><h1>Not authorized</h1><p>Open this page with <code>?k=</code> and the admin_key from the Settings tab.</p></section>'; return; }
+
+      const home = (g) => d.site_url ? `${d.site_url}/?t=${g.token}` : App.gas ? `${App.gas.base}?page=index&t=${g.token}` : `${location.origin}/?t=${g.token}`;
+      const sms = (g, body) => g.phone ? `sms:${String(g.phone).replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(body)}` : '';
+      const invite = (g) => `Hi ${g.name.split(' ')[0]}! You're invited to ${ev.title}, ${ev.when_text} at ${ev.area}. Your personal invite + RSVP: ${home(g)}`;
+      const nudge = (g) => `Hey ${g.name.split(' ')[0]}, reminder about ${ev.title} (${ev.when_text})! ${home(g)}`;
+      const count = (s) => d.guests.filter((g) => (g.status || 'invited') === s);
+      const heads = count('yes').reduce((n, g) => n + (+g.adults || 0) + (+g.kids || 0), 0);
+      const rooms = d.guests.filter((g) => g.sleep === 'request_room' && g.status !== 'no');
+      const when = (s) => s ? new Date(s).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+
+      $('#main').innerHTML = `
+        <div class="page-head"><p class="eyebrow">Host dashboard</p><h1>${esc(ev.title)}</h1></div>
+        <section class="grid">
+          <div class="card"><div class="stat">${heads}</div><div class="muted">people coming</div></div>
+          <div class="card"><div class="stat">${count('yes').length}/${d.guests.length}</div><div class="muted">invites said yes</div></div>
+          <div class="card"><div class="stat">${count('maybe').length}</div><div class="muted">maybe</div></div>
+          <div class="card"><div class="stat">${rooms.length}/${(ev.rooms?.list || []).filter((r) => !r.reserved).length}</div><div class="muted">room requests / rooms</div></div>
+        </section>
+        <section class="card"><h2>Guests</h2><div class="scroll"><table>
+          <tr><th>Name</th><th>Status</th><th>Party</th><th>Stay</th><th>Text</th></tr>
+          ${d.guests.map((g) => `<tr>
+            <td>${esc(g.name)}<br><span class="muted">${esc(g.email)}</span></td>
+            <td><span class="chip ${esc(g.status || 'invited')}">${esc(g.status || 'invited')}</span>${(ev.reminders?.confirm_days || []).map((n) => (g['confirmed_' + n] ? ` ✓${n}` : '')).join('')}</td>
+            <td>${g.status === 'yes' || g.status === 'maybe' ? `${+g.adults || 0}+${+g.kids || 0}` : ''}</td>
+            <td>${esc([g.arrive, g.depart].filter(Boolean).join('→'))} ${esc(g.sleep || '')}</td>
+            <td>${g.phone ? `<a class="btn small" href="${sms(g, invite(g))}">Invite</a> <a class="btn ghost small" href="${sms(g, nudge(g))}">Nudge</a>` : '<span class="muted">no phone</span>'}</td>
+          </tr>`).join('')}
+        </table></div></section>
+        <section class="card"><h2>Room requests</h2>${rooms.length ? rooms.map((g) =>
+          `<p><strong>${esc(g.name)}</strong> ${g.assigned_room ? `<span class="chip yes">${esc(g.assigned_room)}</span>` : '<span class="chip maybe">unassigned</span>'}<br><span class="muted">${esc(g.room_reason)}</span></p>`).join('')
+          : '<p class="muted">None yet.</p>'}<p class="muted">Assign rooms in the Guests tab, <code>assigned_room</code> column.</p></section>
+        <section class="card log"><h2>Recent activity</h2>${d.log.map((l) =>
+          `<p style="margin:6px 0"><span class="muted">${esc(when(l.ts))}</span> · ${esc(l.detail)}</p>`).join('') || '<p class="muted">Nothing yet.</p>'}</section>`;
+    })();
+  </script>
+</body>
+</html>

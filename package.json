@@ -1,0 +1,8 @@
+{
+  "name": "party-lights",
+  "private": true,
+  "scripts": {
+    "test": "node --test scripts/*.test.js && cd template && npm test",
+    "new": "node scripts/new-event.js"
+  }
+}
