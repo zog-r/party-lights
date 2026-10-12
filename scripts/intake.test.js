@@ -88,7 +88,7 @@ test('questions skips what is filled, derived, ask:false, or off, and lists unde
   assert.deepEqual(q.maybe_modules.map((m) => m.id), reg.event_types.find((t) => t.id === 'thanksgiving').maybe);
   assert.ok(q.maybe_modules.every((m) => m.label && m.ask_if));
   assert.deepEqual(q.maybe_modules.find((m) => m.id === 'rooms').needs, ['stay']);
-  assert.deepEqual(q.ask_extra, reg.event_types.find((t) => t.id === 'thanksgiving').ask_extra);
+  assert.deepEqual(q.ask_extra.map((x) => x.question), reg.event_types.find((t) => t.id === 'thanksgiving').ask_extra);
   assert.deepEqual(q.agent_fill.map((a) => a.key), ['timezone']);
 
   fs.writeFileSync(file, JSON.stringify({ ...ev, ...basics('thanksgiving'), features: [...ev.features, 'stay'] }));
@@ -98,6 +98,19 @@ test('questions skips what is filled, derived, ask:false, or off, and lists unde
   assert.ok(after.missing.some((m) => m.key === 'calendar.span'), 'asked only because stay is on');
   assert.ok(!after.maybe_modules.some((m) => ['stay', 'vibe', 'rooms'].includes(m.id)));
   assert.equal(after.agent_fill.length, 0, 'timezone is filled now');
+});
+
+test('ask_extra stays listed until `asked` records it in state.json (never event.json); activities is offered for every holiday', () => {
+  for (const t of reg.event_types) assert.ok(t.maybe.includes('activities') || t.on.includes('activities'), t.id);
+  const { file, ev } = start('thanksgiving');
+  const all = reg.event_types.find((t) => t.id === 'thanksgiving').ask_extra;
+  const qs = () => questions(file).ask_extra.map((q) => q.question);
+  run('asked', '--event', file, '0,3');
+  assert.deepEqual(qs(), [all[1], all[2]]);
+  run('asked', '--event', file, '1', '2');
+  assert.deepEqual(qs(), []);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(path.dirname(file), 'state.json'), 'utf8')).asked_extra, [0, 1, 2, 3]);
+  assert.ok(!('asked_extra' in JSON.parse(fs.readFileSync(file, 'utf8'))), 'event.json stays free of asked state');
 });
 
 test('a thanksgiving with every optional module on validates and builds', () => {

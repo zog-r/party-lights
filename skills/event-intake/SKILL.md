@@ -22,11 +22,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/intake.js" questions --event .party-lights/e
 ```
 It prints JSON:
 - `missing`: fields still open. Ask these, in the host's plain words, at most 3 at a time. Required ones first.
-- `maybe_modules`: optional pieces for this holiday (place, stay, rooms, trips...). Ask each one's `ask_if` unless the host already answered it. Pass modules they decided on to `--skip`.
-- `ask_extra`: holiday-specific questions worth asking once.
+- `maybe_modules`: optional pieces for this holiday (place, stay, rooms, trips, activities...). Always offer `activities` (games and things to do) if it is listed. Ask each one's `ask_if` unless the host already answered it. Pass modules they decided on to `--skip`.
+- `ask_extra`: holiday-specific questions (traditions, who cooks, activities). Required: ask every one in the host's words. Use the answers (fill `activities_intro`/`activity_seeds`, menu, tagline), then record them with `node "${CLAUDE_PLUGIN_ROOT}/scripts/intake.js" asked --event .party-lights/event.json <n>[,n]` (the `n` of each item; it is kept in `.party-lights/state.json`, not event.json) so they stop being listed. A host who says "skip" counts as answered.
 - `agent_fill`: values you work out yourself from other answers (a timezone from the town, for example). Never ask the host for these.
 
-Edit `.party-lights/event.json` with the answers, then run `questions` again. Stop when `missing` is empty.
+Edit `.party-lights/event.json` with the answers, then run `questions` again. Stop when `missing` and `ask_extra` are both empty.
 
 ## 4. Validate
 ```bash

@@ -1,8 +1,9 @@
 // Registry-driven interview helper for the host's event.json.
 //   node scripts/intake.js start --type <id> [--with <module,module>] [--out event.json]
 //   node scripts/intake.js questions --event <file> [--skip <module,module>]
+//   node scripts/intake.js asked --event <file> <n>[,n]     record ask_extra items (by their n) as asked
 // `start` writes a starter event.json from the holiday's defaults in template/fields.json. `questions` prints, as JSON,
-// only what still needs the host (never ask:false, derived, filled-in, or off-module fields). Ask exactly that, nothing more.
+// only what still needs the host (each ask_extra item is {n, question} and stays listed until `asked` records its n in .party-lights/state.json, never in event.json, which ships to guests) (never ask:false, derived, filled-in, or off-module fields). Ask exactly that, nothing more.
 const fs = require('node:fs');
 const path = require('node:path');
 const { modulesOn, isMissing, registry } = require('../template/scripts/validate-event.js');
@@ -33,6 +34,22 @@ function start() {
   console.log(`Wrote ${out}\nNext: node ${__filename} questions --event ${flag('out') || 'event.json'}`);
 }
 
+// Asked state lives beside the event file in state.json (the phase engine's file), keyed by the question's position in the holiday's list.
+const stateFile = (eventFile) => path.join(path.dirname(path.resolve(eventFile)), 'state.json');
+const askedOf = (eventFile) => { try { return JSON.parse(fs.readFileSync(stateFile(eventFile), 'utf8')).asked_extra || []; } catch { return []; } };
+
+function asked() {
+  const file = flag('event');
+  const ns = list(args.filter((a, i) => i > 0 && !a.startsWith('--') && !args[i - 1].startsWith('--')).join(',')).map(Number);
+  if (!file || !ns.length || ns.some((n) => !Number.isInteger(n) || n < 0)) fail('usage: node scripts/intake.js asked --event <file> <n>[,n]');
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(stateFile(file), 'utf8')); } catch { /* first write */ }
+  state.asked_extra = [...new Set([...(state.asked_extra || []), ...ns])].sort((a, b) => a - b);
+  fs.mkdirSync(path.dirname(stateFile(file)), { recursive: true });
+  fs.writeFileSync(stateFile(file), JSON.stringify(state, null, 2) + '\n');
+  console.log(`Recorded asked: ${state.asked_extra.join(',')}`);
+}
+
 function questions() {
   const file = flag('event');
   if (!file || !fs.existsSync(file)) fail('usage: node scripts/intake.js questions --event <file>');
@@ -60,9 +77,9 @@ function questions() {
     const m = registry.modules.find((x) => x.id === id);
     return { id, label: m.label, ask_if: m.ask_if, needs: m.needs || [] };
   });
-  console.log(JSON.stringify({ missing, maybe_modules: maybe, ask_extra: type?.ask_extra || [], agent_fill: agentFill }, null, 2));
+  console.log(JSON.stringify({ missing, maybe_modules: maybe, ask_extra: (type?.ask_extra || []).map((question, n) => ({ n, question })).filter((q) => !askedOf(file).includes(q.n)), agent_fill: agentFill }, null, 2));
 }
 
-const commands = { start, questions };
-if (!commands[args[0]]) fail('usage: node scripts/intake.js start --type <id> | questions --event <file>');
+const commands = { start, questions, asked };
+if (!commands[args[0]]) fail('usage: node scripts/intake.js start --type <id> | questions --event <file> | asked --event <file> <n>[,n]');
 commands[args[0]]();
