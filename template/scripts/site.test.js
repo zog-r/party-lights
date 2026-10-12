@@ -190,3 +190,48 @@ test('page hook contract: derived from the pages, and a redesign that drops a ho
   assert.match(edit('index.html', (h) => h.replace('id="nav"', 'id="n"')), /index\.html: id nav/);
   assert.match(edit('rsvp.html', (h) => h.replace('value="request_room"', 'value="room"')), /rsvp\.html: radio option sleep=request_room/);
 });
+
+const guestPages = pages.filter((f) => !['admin.html', 'sms.html'].includes(f));
+const pageStyles = (html) => [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n');
+
+test('every guest page keeps the full nav: never hidden by page CSS or styles.css', () => {
+  const hides = (c) => [...c.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g)]
+    .filter(([, sel, body]) => /#nav\b/.test(sel) && /display\s*:\s*none|visibility\s*:\s*hidden/.test(body)).map(([, sel]) => sel.trim());
+  assert.deepStrictEqual(hides(css), [], 'styles.css hides the nav');
+  for (const p of guestPages) {
+    const html = fs.readFileSync(path.join(dir, p), 'utf8');
+    assert.deepStrictEqual(hides(pageStyles(html)), [], `${p}: page CSS hides the nav`);
+    assert.match(html, /<nav\b[^>]*id="nav"/, `${p}: needs <nav id="nav">`);
+    assert.doesNotMatch(html, /<nav\b[^>]*\shidden\b|<nav\b[^>]*>(?:(?!<\/nav>)[\s\S])*?<a\b[^>]*\shidden\b/, `${p}: nav or a nav link has the hidden attribute`);
+  }
+});
+
+test('at phone width the nav wraps onto its own full-width row instead of scrolling sideways', () => {
+  const narrow = css.replace(/\/\*[\s\S]*?\*\//g, '').match(/@media \(max-width: 560px\) \{([\s\S]*?)\n\}/)[1];
+  const rule = (sel) => (narrow.match(new RegExp(`(?:^|\\n)\\s*${sel.replace(/[.#]/g, '\\$&')}\\s*\\{([^}]*)\\}`)) || [])[1] || '';
+  assert.match(rule('header.site .inner'), /flex-wrap\s*:\s*wrap/, 'header must wrap at 560px');
+  assert.match(rule('#nav'), /flex\s*:\s*1 1 100%/, '#nav needs its own row');
+  assert.match(rule('#nav'), /flex-wrap\s*:\s*wrap/);
+  assert.match(rule('#nav'), /overflow\s*:\s*visible/, 'no sideways scroll at phone width');
+});
+
+test('the nav links to every guest page, each gated by its module', () => {
+  const src = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
+  const items = [...src.match(/const items = (\[[\s\S]*?\]\]);/)[1].matchAll(/\['([a-z]+\.html)'/g)].map((m) => m[1]);
+  for (const p of guestPages) assert.ok(items.includes(p), `app.js nav() has no link for ${p}`);
+  assert.match(src, /PAGE_MODULE\[href\]/, 'nav() must filter by PAGE_MODULE');
+  const inline = fs.readFileSync(path.join(dir, 'index.html'), 'utf8').match(/<nav id="nav">([\s\S]*?)<\/nav>/);
+  if (inline) for (const p of guestPages) assert.ok(inline[1].includes(`href="${p}"`), `index.html static nav lacks ${p}`);
+});
+
+test('index: an answered guest sees the status card, not the quick form', { skip: !has('index.html') }, () => {
+  const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+  const fn = html.match(/function showStatus\(g\) \{([\s\S]*?)\n    \}\n/);
+  assert.ok(fn, 'index.html needs showStatus(g)');
+  assert.match(fn[1], /yes:[\s\S]*maybe:[\s\S]*no:/, 'labels for yes, maybe and no');
+  assert.match(fn[1], /closest\('\.reply-col'\)\.hidden = answered/, 'hides the quick form once answered');
+  assert.match(fn[1], /Change RSVP/, 'status card links to change the answer');
+  assert.match(fn[1], /App\.link\('rsvp\.html'\)/);
+  assert.doesNotMatch(fn[1], /invited/, 'invited guests keep the form');
+  assert.match(html, /Object\.assign\(me, out\);\s*showStatus\(me\.guest\)/, 'submit switches to the status view');
+});

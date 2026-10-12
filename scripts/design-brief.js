@@ -35,7 +35,7 @@ const brief = {
   audience: "the host's friends and family, mostly on phones",
   mood,
   must_keep: [ev.title, ev.when_text, ev.area].filter(Boolean),
-  constraints: 'the template is plumbing, not the look: re-compose every page in `pages` (layout, section order, components, copy voice), not just colors and fonts; for each page keep every hook listed in its `hooks` (ids, classes, data- attributes, form field names, App.* calls) plus the app.js and styles.css tags and the links between pages; no external fonts beyond Google Fonts',
+  constraints: 'the template is plumbing, not the look: re-compose every page in `pages` (layout, section order, components, copy voice), not just colors and fonts; for each page keep every hook listed in its `hooks` (ids, classes, data- attributes, form field names, App.* calls) plus the app.js and styles.css tags and the links between pages; every page keeps the full nav (style it, never hide it); no external fonts beyond Google Fonts',
   pages,
   directions: 3,
   max_iters: 6,

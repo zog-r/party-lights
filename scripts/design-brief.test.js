@@ -33,6 +33,7 @@ test('the brief lists every page the event turns on, each with its hook contract
   assert.deepStrictEqual(b.pages.map((p) => p.file), ['details.html', 'index.html', 'menu.html', 'rsvp.html']);
   assert.ok(b.pages.find((p) => p.file === 'rsvp.html').hooks.ids.includes('form'));
   assert.match(b.constraints, /re-compose every page/);
+  assert.match(b.constraints, /full nav/);
 });
 
 test('check-hooks fails on a lost hook or an unreplaced hero, passes once both are fine', () => {

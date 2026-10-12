@@ -18,7 +18,6 @@
     header.site .brand { color: var(--linen); font: italic 400 1.2rem var(--display); display: block !important; }
     #nav { margin-left: auto; }
     #nav a { color: rgb(246 240 230 / 88%); text-shadow: 0 1px 8px rgb(0 0 0 / 35%); }
-    #nav a[data-page="index"], #nav a[data-page="guests"], #nav a[data-page="trips"], #nav a[data-page="details"], #nav a[data-page="rsvp"] { display: none; }
 
     /* Hero: the real deck footage, full-bleed, then the lights come on. */
     .hero { position: relative; display: grid; align-items: end; min-height: 100svh; background: var(--pine); color: var(--linen); overflow: hidden; }
@@ -102,11 +101,10 @@
     }
     @media (max-width: 560px) {
       header.site .inner { padding: 14px 16px; }
-      #nav { display: none; }
       .lede { padding-bottom: 72px !important; }
       .wrap { padding-left: 16px; padding-right: 16px; }
       .lede { padding: 0 16px 40px; }
-      .hero h1 { font-size: clamp(3.8rem, 18.5vw, 5rem); line-height: .88; }
+      .hero h1 { font-size: clamp(2.6rem, 13vw, 5rem); line-height: .88; overflow-wrap: anywhere; }
       .hero .meta { font-size: .72rem; margin-bottom: 24px; }
       .window .night { object-position: 30% 38%; }
       .day { grid-template-columns: 5.5rem 1fr; column-gap: 12px; }
