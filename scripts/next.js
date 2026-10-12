@@ -1,12 +1,15 @@
 // The phase engine: reads real conditions and says what to do next.
-//   node scripts/next.js [--json] [--mark <phase>[=value]] [--unmark <phase>] [--event f] [--app dir]
-// State lives in .party-lights/state.json: {event, app, marks}. The order lives here; the party-lights skill only narrates.
+//   node next.js [--json] [--mark <phase>[=value]] [--unmark <phase>] [--event f]
+// Run it from the event's own folder (the working directory): that folder becomes the invite app, and its
+// .party-lights/ holds this event's state ({event, marks}) and draft event.json. The plugin itself stays read-only
+// wherever it is installed, so one install serves any number of events. The order lives here; the skill only narrates.
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
-const ROOT = path.join(__dirname, '..');
+const PLUGIN = path.join(__dirname, '..');
+const { IGNORED } = require('./new-event.js');
 const PHASES = ['doctor', 'describe', 'build', 'design', 'review', 'approve', 'google', 'publish', 'smoke', 'invite'];
 const TITLES = {
   doctor: 'Check your setup', describe: 'Describe your event', build: 'Build your invite app', design: 'Pick the look',
@@ -27,7 +30,6 @@ const WHY = {
 const DESIGN_STOPS = /^(PASS|STOP_MAX|STOP_PLATEAU)/i;
 
 const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
-const slug = (s) => String(s || 'my-event').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'my-event';
 
 function newestMtime(dir) {
   let m = 0;
@@ -64,7 +66,7 @@ const unescapeHtml = (s) => String(s).replace(/&#(\d+);/g, (_, n) => String.from
 const pageTitle = (html) => { const m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html || ''); return m ? unescapeHtml(m[1]).trim().toLowerCase() : ''; };
 
 function loadState(root) {
-  return { event: './event.json', app: null, marks: {}, ...(readJSON(path.join(root, '.party-lights/state.json')) || {}) };
+  return { event: '.party-lights/event.json', marks: {}, ...(readJSON(path.join(root, '.party-lights/state.json')) || {}) };
 }
 function saveState(root, state) {
   fs.mkdirSync(path.join(root, '.party-lights'), { recursive: true });
@@ -95,9 +97,12 @@ function realDeps(root) {
 }
 
 // Returns the card for the first unfinished phase.
-async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDeps(root) }) {
+// root = the event's folder (the host's working directory); plugin = where party-lights is installed.
+async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homedir(), state, deps = realDeps(plugin) }) {
   const marks = state.marks || {};
-  const eventFile = path.resolve(root, state.event || './event.json');
+  const eventFile = path.resolve(root, state.event);
+  const nx = (script, args = '') => `node "${path.join(plugin, 'scripts', script)}"${args ? ' ' + args : ''}`;
+  const built = fs.existsSync(path.join(root, 'site/event.json'));
   const done = [];
   const card = (phase, extra) => ({
     phase, step: PHASES.indexOf(phase), total: 9, title: TITLES[phase], why: WHY[phase] || '', status: 'todo',
@@ -113,6 +118,13 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
   if (!deps.has('claude')) design.push({ tool: 'claude CLI', hint: 'https://claude.com/claude-code' });
   const doctor = { blocking: missing, needed_for_design: design };
   if (missing.length) return card('doctor', { why: 'Something small is missing on this computer.', ask: missing.map((m) => `${m.tool}: ${m.hint}`), doctor });
+  const foreign = built ? [] : fs.readdirSync(root).filter((n) => !IGNORED.includes(n));
+  if (foreign.length) {
+    return card('doctor', {
+      why: 'Each event gets a folder of its own, and this one already has other things in it.',
+      ask: ['Make a new empty folder for this event, open Claude there, and run /party-lights:party-lights again.'], doctor,
+    });
+  }
   done.push('doctor');
 
   // 1 describe
@@ -120,72 +132,68 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
   if (!eventOk.ok || !marks.describe) {
     return card('describe', {
       doctor,
-      run: eventOk.ok ? [] : [fs.existsSync(eventFile) ? `node scripts/intake.js questions --event ${state.event}` : 'node scripts/intake.js start --type <id> --out event.json'],
-      ask: eventOk.ok ? ['Read the event back in 5 lines. On a yes: node scripts/next.js --mark describe'] : [eventOk.output],
+      run: eventOk.ok ? [] : [fs.existsSync(eventFile) ? nx('intake.js', `questions --event ${state.event}`) : nx('intake.js', `start --type <id> --out ${state.event}`)],
+      ask: eventOk.ok ? [`Read the event back in 5 lines. On a yes: ${nx('next.js', '--mark describe')}`] : [eventOk.output],
     });
   }
   done.push('describe');
 
   // 2 build
   const ev = readJSON(eventFile) || {};
-  if (!state.app) state.app = `../${slug(ev.title)}`;
-  const app = path.resolve(root, state.app);
-  const appRel = state.app;
-  const built = fs.existsSync(path.join(app, 'site/event.json'));
   let testsOk = false;
   if (built) {
-    const key = Math.max(newestMtime(path.join(app, 'site')), newestMtime(path.join(app, 'gas')));
-    if (state.cache && state.cache.app === app && state.cache.key === key) testsOk = state.cache.ok;
+    const key = Math.max(newestMtime(path.join(root, 'site')), newestMtime(path.join(root, 'gas')));
+    if (state.cache && state.cache.key === key) testsOk = state.cache.ok;
     else {
-      testsOk = deps.runTests(app);
-      state.cache = { app, key, ok: testsOk };
+      testsOk = deps.runTests(root);
+      state.cache = { key, ok: testsOk };
     }
   }
-  if (!built) return card('build', { run: [`npm run new -- ${appRel} --event ./event.json`, `cd ${appRel} && npm test`] });
-  if (!testsOk) return card('build', { why: 'The app is there, but its tests fail. I will fix that first.', run: [`cd ${appRel} && npm test`] });
+  if (!built) return card('build', { run: [nx('new-event.js', `. --event ${state.event}`), 'npm test'] });
+  if (!testsOk) return card('build', { why: 'The app is there, but its tests fail. I will fix that first.', run: ['npm test'] });
   done.push('build');
 
   // 3 design
-  const manifest = readJSON(path.join(app, '.design-loop/manifest.json'));
+  const manifest = readJSON(path.join(root, '.design-loop/manifest.json'));
   if (!(marks.design === 'skipped' || designDecision(manifest))) {
     return card('design', {
       doctor,
-      run: [`node scripts/design-brief.js --app ${appRel} --look "<the host's words>"`],
+      run: [nx('design-brief.js', `--app . --look "<the host's words>"`)],
       ask: ['How should it feel? Colors, mood, anything you have seen and liked (pass their words as --look "...").',
         'A custom look takes a few minutes and needs python3, Chrome and the claude CLI.',
-        'Opt out and keep the plain starter look: node scripts/next.js --mark design=skipped'],
+        `Opt out and keep the plain starter look: ${nx('next.js', '--mark design=skipped')}`],
     });
   }
   done.push('design');
 
   // 4 review, 5 approve
   if (!marks.review) {
-    return card('review', { run: [`cd ${appRel} && npm run dev`, `cd ${appRel} && npm run serve`], links: previewLinks() });
+    return card('review', { run: ['npm run dev', 'npm run serve'], links: previewLinks() });
   }
   done.push('review');
-  if (!marks.approve) return card('approve', { run: [`cd ${appRel} && npm run dev`, `cd ${appRel} && npm run serve`], links: previewLinks(), ask: ['Anything to change? Say "looks good" when you are happy.'] });
+  if (!marks.approve) return card('approve', { run: ['npm run dev', 'npm run serve'], links: previewLinks(), ask: ['Anything to change? Say "looks good" when you are happy.'] });
   done.push('approve');
 
   // 6 google
   const claspRc = path.join(home, '.clasprc.json');
-  const clasp = readJSON(path.join(app, 'gas/.clasp.json'));
-  const siteEv = readJSON(path.join(app, 'site/event.json')) || {};
+  const clasp = readJSON(path.join(root, 'gas/.clasp.json'));
+  const siteEv = readJSON(path.join(root, 'site/event.json')) || {};
   const apiOk = /\/macros\/s\/[\w-]+\/exec/.test(siteEv.api_url || '');
   const apiToggle = { label: 'Turn on the Apps Script API', url: 'https://script.google.com/home/usersettings' };
   if (!fs.existsSync(claspRc)) {
     return card('google', {
       why: 'First, sign in to Google so I can create your Sheet. This opens a browser.',
-      host_run: [`cd ${appRel}/gas && npx -y @google/clasp login`], links: [apiToggle], ask: ['Switch the Apps Script API on (link), then sign in.'],
+      host_run: ['cd gas && npx -y @google/clasp login'], links: [apiToggle], ask: ['Switch the Apps Script API on (link), then sign in.'],
     });
   }
   if (!clasp || !clasp.scriptId || !apiOk) {
-    return card('google', { why: 'Signed in. Now I create your Sheet and its backend.', run: [`cd ${appRel} && npm run google`], links: [apiToggle, ...sheetLinks(clasp)] });
+    return card('google', { why: 'Signed in. Now I create your Sheet and its backend.', run: ['npm run google'], links: [apiToggle, ...sheetLinks(clasp)] });
   }
   if (!marks.sheet) {
     return card('google', {
       why: 'Your Sheet exists. Open it, reload, then run Invite app, Set up / repair tabs, and approve access. That also turns on reminders and alerts.',
       ask: ['In the Sheet, the Invite app menu appears next to Help after a few seconds (reload if not) → Invite app → Set up / repair tabs → Continue → pick your account → on "Google hasn\'t verified this app", click Advanced → Go to <your event> (unsafe) → Allow. It says unsafe because the script is yours and Google hasn\'t reviewed it; it runs only in your account.'],
-      links: sheetLinks(clasp), ask: ['Tell me when the tabs are set up.', 'Then: node scripts/next.js --mark sheet'],
+      links: sheetLinks(clasp), ask: ['Tell me when the tabs are set up.', `Then: ${nx('next.js', '--mark sheet')}`],
     });
   }
   done.push('google');
@@ -193,7 +201,7 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
   // 7 publish
   const hosting = marks.hosting === 'vercel' ? 'vercel' : 'gas';
   if (hosting === 'gas') {
-    const want = String(ev.title || '').trim().toLowerCase();
+    const want = String(siteEv.title ?? ev.title ?? '').trim().toLowerCase();
     const page = apiOk ? await deps.fetchPage(siteEv.api_url) : null;
     const live = !!page && page.status === 200 && !!want && pageTitle(page.body).includes(want);
     if (!live) {
@@ -202,7 +210,7 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
         status: unreachable ? 'unreachable' : 'todo',
         why: unreachable ? `Couldn't reach ${siteEv.api_url}. Check your connection, then run this again.`
           : 'Your invite is served by Google. I am checking that the link opens your event.',
-        run: [`cd ${appRel} && npm run deploy`], links: apiOk ? [{ label: 'Your invite link', url: siteEv.api_url }] : [],
+        run: ['npm run deploy'], links: apiOk ? [{ label: 'Your invite link', url: siteEv.api_url }] : [],
       });
     }
     done.push('publish');
@@ -214,7 +222,7 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
       return card('publish', {
         status: unreachable ? 'unreachable' : 'todo',
         why: unreachable ? `Couldn't reach ${siteEv.site_url}. Check your connection, or run this to put it online again.` : 'This puts the pages on your own Vercel account and gives you a link to text to people.',
-        run: [`cd ${appRel} && npm run host`], links: [{ label: 'Vercel login', url: 'https://vercel.com/login' }],
+        run: ['npm run host'], links: [{ label: 'Vercel login', url: 'https://vercel.com/login' }],
       });
     }
     done.push('publish');
@@ -226,9 +234,9 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
   const adminNote = hosting === 'vercel' && siteEv.site_url
     ? `Your host page: ${base}/admin.html?k=<your admin_key from the Sheet's Settings>`
     : `Your host page: add ?page=admin&k=<your admin_key from the Sheet's Settings> to ${base}`;
-  if (!marks.smoke) return card('smoke', { links: live, ask: ['RSVP yes as yourself, check the address shows, and that the alert arrives (up to 5 minutes).', adminNote, 'Then: node scripts/next.js --mark smoke'] });
+  if (!marks.smoke) return card('smoke', { links: live, ask: ['RSVP yes as yourself, check the address shows, and that the alert arrives (up to 5 minutes).', adminNote, `Then: ${nx('next.js', '--mark smoke')}`] });
   done.push('smoke');
-  if (!marks.invite) return card('invite', { links: live, ask: [adminNote, 'Guest links get ?t=<token> added by the Sheet\'s invite buttons.', 'Add guests, Generate missing tokens, send invites. Then: node scripts/next.js --mark invite'] });
+  if (!marks.invite) return card('invite', { links: live, ask: [adminNote, 'Guest links get ?t=<token> added by the Sheet\'s invite buttons.', `Add guests, Generate missing tokens, send invites. Then: ${nx('next.js', '--mark invite')}`] });
   done.push('invite');
 
   return {
@@ -240,9 +248,9 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
       'Watch RSVPs: the Guests tab and the admin page.',
       adminNote,
       'Your event lives in the Sheet: the guest list, settings and RSVPs are all there.',
-      `Edit the site later: change ${appRel}/site/event.json, then run npm run deploy there. Links already sent keep working.`,
+      'Edit the site later: change site/event.json in this folder, then run npm run deploy. Links already sent keep working.',
     ],
-    host_run_later: [`cd ${appRel} && npm run deploy`],
+    host_run_later: ['npm run deploy'],
   };
 }
 
@@ -274,14 +282,14 @@ function print(c) {
 
 async function main(argv) {
   const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
-  const state = loadState(ROOT);
+  const root = process.cwd();
+  const state = loadState(root);
   if (opt('--event')) state.event = opt('--event');
-  if (opt('--app')) { state.app = opt('--app'); delete state.cache; }
   const mark = opt('--mark');
   if (mark) { const [k, ...v] = mark.split('='); state.marks[k] = v.length ? v.join('=') : true; }
   if (opt('--unmark')) delete state.marks[opt('--unmark')];
-  const c = await evaluate({ state });
-  saveState(ROOT, state);
+  const c = await evaluate({ root, state });
+  saveState(root, state);
   console.log(argv.includes('--json') ? JSON.stringify(c, null, 2) : print(c));
 }
 

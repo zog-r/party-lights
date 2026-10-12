@@ -1,6 +1,6 @@
 # Go live: from a deployed site to real invites
 
-You have an event app from `npm run new`, the Sheet is set up (`npm run google`) and the pages are live at your app's Google link (`api_url`). If you are using `/party-lights`, Claude follows this guide for the smoke and invite steps. This guide takes you from there to invites in your guests' hands. Do the steps in order. Each ends with a check; don't move on until it passes.
+You have an event app (built by `/party-lights:party-lights`), the Sheet is set up (`npm run google`) and the pages are live at your app's Google link (`api_url`). If you are using `/party-lights`, Claude follows this guide for the smoke and invite steps. This guide takes you from there to invites in your guests' hands. Do the steps in order. Each ends with a check; don't move on until it passes.
 
 Replace `<site>` with your invite link: the `api_url` (`https://script.google.com/macros/s/<ID>/exec`) from `site/event.json`. Where this guide shows `<site>/rsvp.html?t=<token>`, use `<site>?page=rsvp&t=<token>`; for `<site>/?t=<token>` use `<site>?t=<token>`; for `<site>/admin.html?k=<admin_key>` use `<site>?page=admin&k=<admin_key>`. (Only if you host the pages yourself on Vercel is `<site>` your own address with the `.html` paths.) Replace `<sheet>` with your Google Sheet, and `<admin_key>` with the `admin_key` value in the Sheet's Settings tab.
 
@@ -94,4 +94,4 @@ Gmail limits free accounts to about 100 emails a day through scripts. Send a lar
 | No host notification | Wait 5 minutes; check the Log tab's `notified` column and that triggers are installed |
 | Link preview is a generic Google card | Expected on the Google link. For your own title and image, host the pages on Vercel (`npm run host`) |
 
-When the smoke test passes, tell Claude (`node scripts/next.js --mark smoke`). When invites are out, `--mark invite`.
+When the smoke test passes, tell Claude and it records the step (`next.js --mark smoke`, then `--mark invite` when the invites are out).

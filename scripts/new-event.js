@@ -4,6 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
+// Entries that don't make a folder "used": the event's own state and the tools around it.
+const IGNORED = ['.party-lights', '.git', '.claude', '.DS_Store'];
+module.exports = { IGNORED };
+if (require.main !== module) return;
+
 const args = process.argv.slice(2);
 const evIdx = args.indexOf('--event');
 const eventFile = evIdx >= 0 ? args[evIdx + 1] : null;
@@ -13,7 +18,7 @@ if (!dest) {
   process.exit(2);
 }
 const out = path.resolve(dest);
-if (fs.existsSync(out) && fs.readdirSync(out).length) {
+if (fs.existsSync(out) && fs.readdirSync(out).some((n) => !IGNORED.includes(n))) {
   console.error(`${out} exists and isn't empty; pick a new folder.`);
   process.exit(2);
 }

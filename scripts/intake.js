@@ -28,8 +28,9 @@ function start() {
       { id: 'drinks', meal: 'The table', label: 'Drinks', suggestions: [] }];
   }
   if (features.includes('activities')) ev.activity_seeds = type.activity_ideas.map((title) => ({ title }));
+  fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(ev, null, 2) + '\n');
-  console.log(`Wrote ${out}\nNext: node scripts/intake.js questions --event ${flag('out') || 'event.json'}`);
+  console.log(`Wrote ${out}\nNext: node ${__filename} questions --event ${flag('out') || 'event.json'}`);
 }
 
 function questions() {

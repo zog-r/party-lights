@@ -7,11 +7,12 @@ const { evaluate, designDecision } = require('./next.js');
 
 function setup() {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'gnb-'));
-  const root = path.join(base, 'party-lights');
+  const root = path.join(base, 'my-party');
+  const plugin = path.join(base, 'plugin');
   const home = path.join(base, 'home');
   fs.mkdirSync(root);
   fs.mkdirSync(home);
-  const state = { event: './event.json', app: '../party', marks: {} };
+  const state = { event: '.party-lights/event.json', marks: {} };
   const calls = { tests: 0 };
   const dep = { valid: true, testsOk: true, status: 200, page: { status: 200, body: '<html><title>Party</title></html>' } };
   const deps = {
@@ -22,22 +23,22 @@ function setup() {
     fetchStatus: async () => dep.status,
     fetchPage: async () => dep.page,
   };
-  const run = () => evaluate({ root, home, state, deps });
-  return { base, root, home, state, calls, dep, run, app: path.join(base, 'party') };
+  const run = () => evaluate({ root, plugin, home, state, deps });
+  return { base, root, home, state, calls, dep, run, app: root };
 }
 const write = (f, s) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, s); };
 
 test('walks every phase in order', async () => {
   const t = setup();
   assert.equal((await t.run()).phase, 'describe'); // no event
-  write(path.join(t.root, 'event.json'), JSON.stringify({ title: 'Party' }));
+  write(path.join(t.root, '.party-lights/event.json'), JSON.stringify({ title: 'Party' }));
   let c = await t.run();
   assert.equal(c.phase, 'describe'); // valid but unmarked
   assert.equal(c.step, 1);
   t.state.marks.describe = true;
   c = await t.run();
   assert.equal(c.phase, 'build');
-  assert.match(c.run[0], /npm run new -- \.\.\/party --event \.\/event\.json/);
+  assert.match(c.run[0], /plugin\/scripts\/new-event\.js" \. --event \.party-lights\/event\.json/);
 
   write(path.join(t.app, 'site/event.json'), JSON.stringify({ api_url: '', site_url: '' }));
   t.dep.testsOk = false;
@@ -81,15 +82,15 @@ test('walks every phase in order', async () => {
   c = await t.run();
   assert.equal(c.status, 'unreachable');
   t.dep.page = { status: 200, body: '<html><title>Party &amp; Co</title></html>' };
-  write(path.join(t.root, 'event.json'), JSON.stringify({ title: '' }));
+  write(path.join(t.root, '.party-lights/event.json'), JSON.stringify({ title: '' }));
   c = await t.run();
   assert.equal(c.phase, 'publish', 'an empty title must not match any 200 page');
-  write(path.join(t.root, 'event.json'), JSON.stringify({ title: 'Party & Co' }));
+  write(path.join(t.root, '.party-lights/event.json'), JSON.stringify({ title: 'Party & Co' }));
   c = await t.run();
   assert.equal(c.phase, 'smoke');
   assert.ok(c.links.some((l) => l.url === 'https://script.google.com/macros/s/AKfy-1/exec'));
   assert.ok(c.ask.some((a) => /page=admin&k=/.test(a)));
-  write(path.join(t.root, 'event.json'), JSON.stringify({ title: 'Party' }));
+  write(path.join(t.root, '.party-lights/event.json'), JSON.stringify({ title: 'Party' }));
   t.dep.page = { status: 200, body: '<title>Party</title>' };
 
   // vercel hosting is opt-in
@@ -117,7 +118,7 @@ test('walks every phase in order', async () => {
 
 test('invalid event stays in describe even when marked', async () => {
   const t = setup();
-  write(path.join(t.root, 'event.json'), '{}');
+  write(path.join(t.root, '.party-lights/event.json'), '{}');
   t.state.marks.describe = true;
   t.dep.valid = false;
   const c = await t.run();
@@ -127,7 +128,7 @@ test('invalid event stays in describe even when marked', async () => {
 
 test('test result is cached until site/ or gas/ changes', async () => {
   const t = setup();
-  write(path.join(t.root, 'event.json'), '{"title":"Party"}');
+  write(path.join(t.root, '.party-lights/event.json'), '{"title":"Party"}');
   write(path.join(t.app, 'site/event.json'), '{}');
   t.state.marks.describe = true;
   await t.run();
@@ -136,6 +137,17 @@ test('test result is cached until site/ or gas/ changes', async () => {
   fs.utimesSync(path.join(t.app, 'site/event.json'), new Date(), new Date(Date.now() + 9000));
   await t.run();
   assert.equal(t.calls.tests, 2);
+});
+
+test('a folder with other things in it is not an event folder', async () => {
+  const t = setup();
+  write(path.join(t.root, 'notes.txt'), 'mine');
+  const c = await t.run();
+  assert.equal(c.phase, 'doctor');
+  assert.match(c.ask[0], /new empty folder/);
+  fs.rmSync(path.join(t.root, 'notes.txt'));
+  write(path.join(t.root, '.party-lights/state.json'), '{}');
+  assert.equal((await t.run()).phase, 'describe');
 });
 
 test('doctor blocks on old node', async () => {
@@ -149,7 +161,7 @@ test('design is done by a manifest stop decision', async () => {
   assert.equal(designDecision({ rounds: [{ decision: 'CONTINUE' }, { decision: 'STOP_PLATEAU' }] }), 'STOP_PLATEAU');
   assert.equal(designDecision({ decision: 'CONTINUE' }), null);
   const t = setup();
-  write(path.join(t.root, 'event.json'), '{"title":"Party"}');
+  write(path.join(t.root, '.party-lights/event.json'), '{"title":"Party"}');
   write(path.join(t.app, 'site/event.json'), '{}');
   write(path.join(t.app, '.design-loop/manifest.json'), JSON.stringify({ decision: 'STOP_MAX' }));
   t.state.marks.describe = true;

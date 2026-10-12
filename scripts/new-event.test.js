@@ -27,6 +27,14 @@ test('works with just a destination (example event)', () => {
   assert.match(fs.readFileSync(path.join(dir, 'site/index.html'), 'utf8'), /<title>Winter Supper at the Cabin<\/title>/);
 });
 
+test('builds in place when the folder only holds the event\'s own state', () => {
+  const dir = tmp();
+  fs.mkdirSync(path.join(dir, '.party-lights'));
+  execFileSync('node', [script, dir], { stdio: 'pipe' });
+  assert.ok(fs.existsSync(path.join(dir, 'site/index.html')));
+  assert.ok(fs.existsSync(path.join(dir, '.party-lights')));
+});
+
 test('refuses to overwrite a non-empty folder', () => {
   const dir = tmp();
   fs.writeFileSync(path.join(dir, 'keep.txt'), 'x');

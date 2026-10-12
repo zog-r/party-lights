@@ -5,20 +5,20 @@ description: Reference for the describe phase of /party-lights. Use when someone
 
 # Describe phase: plain words → event.json
 
-The guided flow is `skills/party-lights/SKILL.md`. This file is the detail for its describe step. The questions, defaults and rules live in `template/fields.json` and the validator, not here. Do not keep your own question list.
+The guided flow is `skills/party-lights/SKILL.md`. Run every command from the event's folder; `${CLAUDE_PLUGIN_ROOT}` is where Party Lights is installed. This file is the detail for its describe step. The questions, defaults and rules live in `${CLAUDE_PLUGIN_ROOT}/template/fields.json` and the validator, not here. Do not keep your own question list.
 
 ## 1. Let them talk first
 Invite the host to describe the event in their own words. Pull out everything they already said (holiday, date, who, food, place, overnight stays). Ask nothing twice.
 
 ## 2. Start the file
 ```bash
-node scripts/intake.js start --type <id> --out event.json
+node "${CLAUDE_PLUGIN_ROOT}/scripts/intake.js" start --type <id> --out .party-lights/event.json
 ```
-`<id>` is one of `thanksgiving`, `christmas`, `hanukkah`, `kwanzaa`, `nye`, `holiday_party` (see `event_types` in `template/fields.json`). Add `--with <module,module>` for extra modules the host already wants. For a holiday not in the list, use `holiday_party` and set `holiday_name`. Then fill in what the host told you.
+`<id>` is one of `thanksgiving`, `christmas`, `hanukkah`, `kwanzaa`, `nye`, `holiday_party` (see `event_types` in `${CLAUDE_PLUGIN_ROOT}/template/fields.json`). Add `--with <module,module>` for extra modules the host already wants. For a holiday not in the list, use `holiday_party` and set `holiday_name`. Then fill in what the host told you.
 
 ## 3. Ask only what is missing
 ```bash
-node scripts/intake.js questions --event event.json [--skip <module,module>]
+node "${CLAUDE_PLUGIN_ROOT}/scripts/intake.js" questions --event .party-lights/event.json [--skip <module,module>]
 ```
 It prints JSON:
 - `missing`: fields still open. Ask these, in the host's plain words, at most 3 at a time. Required ones first.
@@ -26,18 +26,18 @@ It prints JSON:
 - `ask_extra`: holiday-specific questions worth asking once.
 - `agent_fill`: values you work out yourself from other answers (a timezone from the town, for example). Never ask the host for these.
 
-Edit `event.json` with the answers, then run `questions` again. Stop when `missing` is empty.
+Edit `.party-lights/event.json` with the answers, then run `questions` again. Stop when `missing` is empty.
 
 ## 4. Validate
 ```bash
-node template/scripts/validate-event.js ./event.json
+node "${CLAUDE_PLUGIN_ROOT}/template/scripts/validate-event.js" .party-lights/event.json
 ```
 The validator is the judge, not you. Fix every line it prints. If a rule is wrong for this event, tell the host and change the rule in code.
 
 ## 5. Read it back
 Summarize in five lines (name, when, where, who stays, food). On a yes:
 ```bash
-node scripts/next.js --mark describe
+node "${CLAUDE_PLUGIN_ROOT}/scripts/next.js" --mark describe
 ```
 
 ## Mapping notes

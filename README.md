@@ -36,15 +36,21 @@ If you want nicer link previews and no Google notice, you can put the pages on V
 
 ## Install
 
-1. Download this folder (or `git clone https://github.com/zog-r/party-lights`).
-2. Open the folder in the Claude desktop app (Code tab) or in Claude Code.
+Party Lights is a Claude plugin. Install it once; it stays out of your way and is never written to.
+
+```text
+/plugin marketplace add zog-r/party-lights
+/plugin install party-lights@party-lights
+```
 
 ## Usage
 
-Type `/party-lights` and describe your event in your own words, for example:
+Every event gets a folder of its own, and that folder becomes the event's invite app. Make a new empty folder for each event, open Claude there, and type `/party-lights:party-lights` (or just say "I'm hosting..."). The event's state lives in a `.party-lights/` folder inside it, so you can run as many events as you like from one install, each separate.
+
+Describe your event in your own words, for example:
 
 ```text
-/party-lights I'm hosting Friendsgiving on Saturday, November 21 in Denver. About 15 people, potluck style, kids welcome.
+/party-lights:party-lights I'm hosting Friendsgiving on Saturday, November 21 in Denver. About 15 people, potluck style, kids welcome.
 ```
 
 Claude does the rest, one step at a time. You pick the look, check a preview, and say when it looks good.
@@ -56,6 +62,15 @@ Claude can't do these for you:
 - Sign in to Google.
 - Approve access once in your Sheet. Google will warn "Google hasn't verified this app". That's expected: the script is yours and only runs in your account. Click **Advanced**, then **Go to (your event) (unsafe)**, then **Allow**.
 - Press Run on a few commands Claude shows you.
+
+## What it runs
+
+Everything runs on your computer and your own accounts. Nothing is sent to the plugin's author.
+
+- Node scripts from the plugin: they write the event's files into your event folder and check your own invite link.
+- `npx -y @google/clasp`: Google's tool, which creates and updates the Sheet and Apps Script on your Google account.
+- The custom-look step: runs `python3`, Chrome (screenshots) and the `claude` CLI on your computer.
+- Optional, only if you ask for it: `npx -y vercel` to put the pages on your Vercel account.
 
 ## Privacy
 

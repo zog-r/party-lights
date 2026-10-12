@@ -16,14 +16,14 @@ Answer in plain language. The assistant should never ask for the street address,
 
 ## 3. Save the result
 
-Copy the code block into a file named `event.json` on your computer.
+Make a new empty folder for this event. Copy the code block into a file named `event.json` inside a `.party-lights` folder there (`.party-lights/event.json`).
 
 ## 4. Check it yourself
 
-From the repo folder, with Node 20 or newer:
+From the event's folder, with Node 20 or newer (`<party-lights>` is where you downloaded this repo):
 
 ```bash
-node template/scripts/validate-event.js ./event.json
+node <party-lights>/template/scripts/validate-event.js .party-lights/event.json
 ```
 
 If it prints problems, paste them back into the chat and ask for a corrected `event.json`. Repeat until it prints no problems.
@@ -31,7 +31,7 @@ If it prints problems, paste them back into the chat and ask for a corrected `ev
 ## 5. Build the app
 
 ```bash
-npm run new -- ../my-event --event ./event.json
+node <party-lights>/scripts/new-event.js . --event .party-lights/event.json
 ```
 
-Then follow `skills/invite-builder/SKILL.md` (it uses `npm run google`; `npm run host` is an optional Vercel step) and `docs/go-live.md`. You can paste those into the chat too and ask it to explain each step in plain language, but you run the commands and do the Google steps.
+Then follow `<party-lights>/skills/invite-builder/SKILL.md` (it uses `npm run google`; `npm run host` is an optional Vercel step) and `docs/go-live.md`. You can paste those into the chat too and ask it to explain each step in plain language, but you run the commands and do the Google steps.

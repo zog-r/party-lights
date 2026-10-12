@@ -7,3 +7,5 @@ media/raw/
 gas/page_*.html
 gas/pages.gen.js
 gas/hero.gen.js
+
+.party-lights/

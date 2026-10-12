@@ -2,25 +2,27 @@
 
 This repo turns a host's description of a holiday event into an invite app (RSVPs, calendar links, potluck menu, guest list, reminders): a static site with a Google Sheet as the database. Read `README.md` for the overview.
 
+Party Lights is a Claude plugin. It is installed once and never written to; each event gets its own folder (the working directory), which becomes that event's invite app, with its state in `.party-lights/`. `<plugin>` below is where Party Lights is installed (`${CLAUDE_PLUGIN_ROOT}` in a plugin skill, or your clone of this repo). Run every command from the event's folder, not from `<plugin>`.
+
 The instructions live in `skills/`. They are plain Markdown and are the single source of truth. Read the matching file and follow it; do not rely on a copy here.
 
 | When the user wants to... | Read |
 |---|---|
-| Make an event or invite app (this is the default) | `skills/party-lights/SKILL.md`. Start with `node scripts/next.js` |
+| Make an event or invite app (this is the default) | `skills/party-lights/SKILL.md`. Start with `node <plugin>/scripts/next.js` |
 | Describe phase detail: build `event.json` | `skills/event-intake/SKILL.md` |
 | Build, Google and publish phase detail | `skills/invite-builder/SKILL.md` |
 | Port improvements from a real event back into this template | `skills/distill/SKILL.md` |
 
 `scripts/next.js` decides which step the host is on. The two phase files are references for it. After deploying, `docs/go-live.md` covers the end-to-end test and sending invites. `recipes/` explains how each piece was built.
 
-## Commands (run from the repo root)
+## Commands (run from the event's folder)
 
-- `node scripts/next.js [--json]` shows the current step. `--mark <phase>[=value]` records one as done, `--unmark <phase>` re-opens it.
-- `node scripts/intake.js start --type <id> --out event.json` starts an `event.json` from a holiday. `node scripts/intake.js questions --event event.json [--skip <modules>]` lists what is still missing.
-- `node template/scripts/validate-event.js ./event.json` checks an `event.json`.
-- `npm run new -- ../my-event --event ./event.json` creates the app folder.
-- `npm test` checks the scripts, the template, the validator, and that a new event builds.
-- Inside the new app folder: `npm run dev` (local backend), `npm run serve` (site), `npm run google` (create the Sheet and backend), `npm run deploy` (push the backend and pages; always the same deployment). The pages are served by Apps Script at the app's `/exec` link. `npm run host` is optional: it puts the pages on Vercel for nicer link previews (then Settings `site_url` is set; otherwise leave it blank).
+- `node <plugin>/scripts/next.js [--json]` shows the current step. `--mark <phase>[=value]` records one as done, `--unmark <phase>` re-opens it.
+- `node <plugin>/scripts/intake.js start --type <id> --out .party-lights/event.json` starts an `event.json` from a holiday. `node <plugin>/scripts/intake.js questions --event .party-lights/event.json [--skip <modules>]` lists what is still missing.
+- `node <plugin>/template/scripts/validate-event.js .party-lights/event.json` checks an `event.json`.
+- `node <plugin>/scripts/new-event.js . --event .party-lights/event.json` builds the app into the event's folder.
+- `npm test` (in a clone of this repo, for contributors) checks the scripts, the template, the validator, and that a new event builds.
+- Then, in the event's folder: `npm run dev` (local backend), `npm run serve` (site), `npm run google` (create the Sheet and backend), `npm run deploy` (push the backend and pages; always the same deployment). The pages are served by Apps Script at the app's `/exec` link. `npm run host` is optional: it puts the pages on Vercel for nicer link previews (then Settings `site_url` is set; otherwise leave it blank).
 
 ## Rules
 

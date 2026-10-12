@@ -15,6 +15,7 @@ Thanks for your interest in contributing.
 git clone https://github.com/zog-r/party-lights.git
 cd party-lights
 npm test        # scripts, template backend, validator, and a new event end to end (Node 20+, no installs)
+claude --plugin-dir .   # try the plugin from this checkout (run it from an empty folder, as a host would)
 ```
 
 ## Repo tour
@@ -28,13 +29,13 @@ template/             the event app that gets copied for each host
   scripts/            dev-api.js (local backend), gen-event.js, deploy.js,
                       google-setup.js (npm run google), host.js (npm run host, optional Vercel)
 scripts/              tools for this repo, not the app
-  next.js             says which step the host is on and what to do next
+  next.js             says which step the host is on and what to do next (state lives in the event's .party-lights/, not here)
   intake.js           starts event.json from a holiday and lists open questions
-  new-event.js        creates the app folder (npm run new)
+  new-event.js        builds the app into the event's folder
   design-brief.js     writes the brief for the design loop
   vendor.js           copies pinned third-party skills in
 skills/               plain-Markdown instructions
-  party-lights            the guided workflow (/party-lights)
+  party-lights            the guided workflow (/party-lights:party-lights)
   event-intake, invite-builder, distill   phase references
   design-loop, cool-uncle-shades, markup  vendored, do not edit by hand
 recipes/              how each piece was built, and the gotchas

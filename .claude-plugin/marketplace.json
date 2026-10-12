@@ -1,0 +1,8 @@
+{
+  "name": "party-lights",
+  "description": "Party Lights: holiday invite apps built from a plain-words description.",
+  "owner": { "name": "zog-r" },
+  "plugins": [
+    { "name": "party-lights", "source": "./", "description": "Describe your holiday event in plain words and get a working invite app, run from a Google Sheet on your own Google account." }
+  ]
+}

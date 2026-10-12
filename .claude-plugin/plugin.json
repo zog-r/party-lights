@@ -1,7 +1,11 @@
 {
   "name": "party-lights",
-  "version": "0.1.0",
-  "description": "Describe your holiday event in plain words and get a working invite app: RSVPs, calendar links, potluck menu, guest list and reminders, run from a Google Sheet on your own Google account. Start with /party-lights.",
+  "displayName": "Party Lights",
+  "version": "0.2.0",
+  "author": { "name": "zog-r", "url": "https://github.com/zog-r" },
+  "homepage": "https://github.com/zog-r/party-lights",
+  "repository": "https://github.com/zog-r/party-lights",
+  "description": "Describe your holiday event in plain words and get a working invite app: RSVPs, calendar links, potluck menu, guest list and reminders, run from a Google Sheet on your own Google account. Start with /party-lights:party-lights.",
   "license": "MIT",
   "keywords": [
     "invite",
