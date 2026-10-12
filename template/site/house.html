@@ -75,7 +75,7 @@
         <h2>About the house</h2>
         <div id="about"></div>
       </div>
-      <aside class="host-note">
+      <aside class="host-note" data-module="stay rooms">
         <span class="sc">Want a bed?</span>
         <p>Rooms are first come, first served, and the host sorts out who sleeps where. Tell us what you need when you RSVP.</p>
         <a class="btn primary" href="rsvp.html" data-link>RSVP &amp; request a room</a>
@@ -84,7 +84,7 @@
 
     <section class="block byday" id="video" hidden></section>
 
-    <section class="block">
+    <section class="block" data-module="rooms">
       <h2>Where you'll sleep</h2>
       <div class="rooms" id="rooms"></div>
     </section>
@@ -125,7 +125,7 @@
         $('#video').hidden = false;
       }
       const bed = '<svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 27V9M30 27v-8M4 19h26M4 23h26"/><rect x="7" y="13" width="8" height="6" rx="2"/></svg>';
-      $('#rooms').innerHTML = (ev.rooms?.list || []).map((r, i) => `
+      if ($('#rooms')) $('#rooms').innerHTML = (ev.rooms?.list || []).map((r, i) => `
         <div class="room${r.reserved ? ' reserved' : ''}">${bed}
           <h3>${r.reserved ? "Host's room" : `Bedroom ${i + 1}`}</h3><p>${esc(r.beds)}</p></div>`).join('')
         + `<div class="room">${bed}<h3>Couches &amp; more</h3><p>Ample couch space for anyone down to sleep anywhere</p></div>`;

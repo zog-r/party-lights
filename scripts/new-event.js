@@ -23,6 +23,23 @@ if (fs.existsSync(out) && fs.readdirSync(out).some((n) => !IGNORED.includes(n)))
   process.exit(2);
 }
 
+// Drop what this event doesn't use: pages of modules it turns off (no `features` list = all on), then any asset that no
+// remaining page, stylesheet, script or event.json mentions. event.resolved.json is regenerated from event.json, so it doesn't count.
+function prune(app) {
+  const site = path.join(app, 'site');
+  const { pagesFor } = require(path.join(app, 'scripts/page-hooks.js'));
+  const ev = JSON.parse(fs.readFileSync(path.join(site, 'event.json'), 'utf8'));
+  const keep = pagesFor(ev, site);
+  for (const f of fs.readdirSync(site)) {
+    if (f.endsWith('.html') && !['admin.html', 'sms.html'].includes(f) && !keep.includes(f)) fs.rmSync(path.join(site, f));
+  }
+  const text = fs.readdirSync(site).filter((f) => /\.(html|css|js|json)$/.test(f) && f !== 'event.resolved.json')
+    .map((f) => fs.readFileSync(path.join(site, f), 'utf8')).join('\n');
+  const used = new Set([...text.matchAll(/assets\/([\w.-]+)/g)].map((m) => m[1]));
+  const assets = path.join(site, 'assets');
+  for (const f of fs.readdirSync(assets)) if (!used.has(f)) fs.rmSync(path.join(assets, f));
+}
+
 fs.cpSync(path.join(__dirname, '..', 'template'), out, { recursive: true });
 fs.writeFileSync(path.join(out, 'README.md'), '# My event\n\nMade with Party Lights. Local dev: `npm run dev` + `npm run serve`, then open http://localhost:5173/?t=test1\n');
 if (eventFile) {
@@ -30,6 +47,7 @@ if (eventFile) {
   ev.$schema = '../event.schema.json';
   fs.writeFileSync(path.join(out, 'site/event.json'), JSON.stringify(ev, null, 2) + '\n');
 }
+prune(out);
 try {
   execFileSync('node', ['scripts/validate-event.js'], { cwd: out, stdio: 'inherit' });
 } catch {

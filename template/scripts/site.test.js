@@ -25,7 +25,7 @@ test('no leftovers from the old cream theme', () => {
 
 test('design tokens live in styles.css only', () => {
   for (const t of ['--pine:', '--glow:', '--linen:', '--mist:']) assert.ok(css.includes(t), t);
-  for (const p of ['index.html', 'house.html']) assert.doesNotMatch(fs.readFileSync(path.join(dir, p), 'utf8'), /--pine:|--linen:/, p);
+  for (const p of ['index.html', 'house.html'].filter((f) => pages.includes(f))) assert.doesNotMatch(fs.readFileSync(path.join(dir, p), 'utf8'), /--pine:|--linen:/, p);
 });
 
 test('referenced assets exist', () => {
@@ -47,4 +47,146 @@ test('calendar spans the stay as all-day with an exclusive end, unless calendar.
   const main = App.calendarSpan({ ...ev, calendar: { span: 'main' } });
   assert.deepStrictEqual({ ...main }, { allDay: false, start: '20261220T000000Z', end: '20261220T060000Z' });
   assert.strictEqual(App.calendarSpan({ ...ev, stay: undefined }).allDay, false);
+});
+
+// Copy that belongs to one optional module (ids from fields.json). It may only sit in markup under data-module="<id>", so an
+// event without that module never shows it. App.prune removes the tagged elements on load.
+const VOCAB = {
+  stay: /\b(stay(ing)?|overnight|sleep(ing)?|arriv(e|ing)|leaving|weekend)\b/i,
+  rooms: /\b(rooms?|beds?|bedrooms?)\b/i,
+  trips: /\b(day )?trips?\b/i,
+  place: /\bhouse\b/i,
+  schedule: /\b(schedule|agenda|itinerary|day-by-day|full plan)\b/i,
+  menu: /\b(potluck|menu)\b/i,
+  guest_list: /\bguest list\b/i,
+  reminders: /\bremind(er|ers)?\b/i,
+  activities: /\b(games?|activit(y|ies))\b/i,
+  gift_exchange: /\b(gift|secret santa|white elephant)\b/i,
+  vibe: /\bdress code\b/i,
+};
+
+// The text a guest could read on a page (body text plus placeholder/label/alt values), minus anything under data-module.
+function visibleCopy(html, keep) {
+  const s = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '');
+  const body = s.slice(s.indexOf('<body'));
+  const VOID = /^(img|input|br|hr|meta|link|source)$/i;
+  let out = '', last = 0, skip = null;
+  for (const m of body.matchAll(/<(\/?)([a-z][\w-]*)\b([^>]*)>/gi)) {
+    const [tag, close, name, attrs] = m;
+    if (!skip) out += body.slice(last, m.index);
+    last = m.index + tag.length;
+    if (skip) {
+      if (name === skip.name) skip.depth += close ? -1 : VOID.test(name) ? 0 : 1;
+      if (skip.depth === 0) skip = null;
+      continue;
+    }
+    const gate = attrs.match(/\bdata-module="([^"]*)"/);
+    if (!close && gate && !gate[1].split(/\s+/).some((g) => keep.includes(g))) { if (!VOID.test(name)) skip = { name, depth: 1 }; continue; }
+    out += ' ' + [...attrs.matchAll(/\b(?:placeholder|aria-label|title|alt)="([^"]*)"/g)].map((a) => a[1]).join(' ') + ' ';
+  }
+  return out;
+}
+
+test('module-specific copy only appears in markup gated by its module', () => {
+  const fields = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fields.json'), 'utf8'));
+  const ids = fields.modules.map((m) => m.id);
+  for (const k of Object.keys(VOCAB)) assert.ok(ids.includes(k), `${k} is not a module in fields.json`);
+  const app = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
+  const pageModule = JSON.parse(app.match(/PAGE_MODULE = (\{[^}]*\})/)[1].replace(/'/g, '"'));
+  for (const p of pages.filter((f) => !['admin.html', 'sms.html'].includes(f))) {
+    // A page that belongs to a module may talk about it freely; everything else must be gated.
+    const own = pageModule[p];
+    const text = visibleCopy(fs.readFileSync(path.join(dir, p), 'utf8'), own ? [own] : []);
+    for (const [mod, re] of Object.entries(VOCAB)) {
+      if (mod === own) continue;
+      const hit = text.match(re);
+      assert.ok(!hit, `${p}: "${hit && hit[0]}" is ${mod} copy outside an element with data-module="${mod}"`);
+    }
+  }
+});
+
+test('data-module names are real modules', () => {
+  const ids = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fields.json'), 'utf8')).modules.map((m) => m.id);
+  for (const p of pages) {
+    for (const [, v] of fs.readFileSync(path.join(dir, p), 'utf8').matchAll(/\bdata-module="([^"]*)"/g)) {
+      for (const m of v.split(/\s+/)) assert.ok(ids.includes(m), `${p}: data-module="${m}"`);
+    }
+  }
+});
+
+test('App.prune drops elements whose module is off and keeps the rest (no features list = all on)', () => {
+  const removed = [];
+  const els = ['stay', 'stay rooms', 'menu'].map((m) => ({ dataset: { module: m }, remove() { removed.push(m); } }));
+  const ctx = { location: { search: '', hostname: 'x', origin: '', pathname: '/' }, localStorage: { getItem: () => null, setItem() {} },
+    fetch: () => new Promise(() => {}), document: { querySelectorAll: () => els }, URLSearchParams, Intl, Date, encodeURIComponent };
+  const App = require('node:vm').runInNewContext(fs.readFileSync(path.join(dir, 'app.js'), 'utf8') + '; App', ctx);
+  App.prune({});
+  assert.deepStrictEqual(removed, []);
+  App.prune({ features: ['menu'] });
+  assert.deepStrictEqual(removed, ['stay', 'stay rooms']);
+});
+
+// A built app drops the pages its event doesn't use (scripts/new-event.js), so page-specific checks run only where the page exists.
+const has = (f) => pages.includes(f);
+
+test('menu "add a dish" opens a dialog with only ideas and a free-text field', { skip: !has('menu.html') }, () => {
+  const html = fs.readFileSync(path.join(dir, 'menu.html'), 'utf8');
+  assert.match(html, /<dialog id="addDlg" aria-labelledby="addTitle">/);
+  assert.match(html, /<input type="hidden" id="slot"/); // the clicked button already chose the slot
+  assert.doesNotMatch(html, /<select id="slot"|scrollIntoView/);
+  assert.match(html, /dlg\.showModal\(\)/);
+  assert.match(html, /data-close/);
+  assert.match(css, /dialog::backdrop/);
+});
+
+test('details "add a game" opens a dialog wired to addActivity/removeActivity', () => {
+  const html = fs.readFileSync(path.join(dir, 'details.html'), 'utf8');
+  assert.match(html, /<dialog id="gameDlg"/);
+  assert.match(html, /gameDlg|dlg\.showModal\(\)/);
+  assert.match(html, /api\('addActivity'/);
+  assert.match(html, /api\('removeActivity'/);
+});
+
+test('add-item dialogs: no padding-click close, no double submit, inline errors', () => {
+  for (const [file, err] of [['menu.html', 'addErr'], ['details.html', 'gameErr']]) {
+    if (!has(file)) continue;
+    const html = fs.readFileSync(path.join(dir, file), 'utf8');
+    assert.doesNotMatch(html, /e\.target === dlg/, file); // padding clicks also have target === dlg
+    assert.match(html, /getBoundingClientRect\(\)/, file);
+    assert.match(html, new RegExp(`id="${err}" role="alert" hidden`), file);
+    assert.match(html, /go\.disabled = true[\s\S]*finally \{ go\.disabled = false; \}/, file);
+  }
+  if (has('menu.html')) assert.match(fs.readFileSync(path.join(dir, 'menu.html'), 'utf8'), /try \{\s*await App\.api\('removeFood'/);
+});
+
+test('page hook contract: derived from the pages, and a redesign that drops a hook is caught', { skip: !['house', 'menu', 'guests', 'trips'].every((n) => has(n + '.html')) }, () => {
+  const { contract, missing } = require('./page-hooks.js');
+  const want = contract(dir);
+  assert.deepStrictEqual(Object.keys(want).sort(), pages.filter((p) => !['admin.html', 'sms.html'].includes(p)).sort());
+  assert.ok(want['rsvp.html'].ids.includes('form') && want['rsvp.html'].names.includes('status'));
+  assert.ok(want['menu.html'].ids.includes('addDlg') && want['menu.html'].calls.includes('api'));
+  assert.deepStrictEqual(missing(want, dir), []);
+
+  const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'hooks-'));
+  for (const p of pages) fs.writeFileSync(path.join(tmp, p), fs.readFileSync(path.join(dir, p), 'utf8'));
+  const rsvp = fs.readFileSync(path.join(tmp, 'rsvp.html'), 'utf8');
+  fs.writeFileSync(path.join(tmp, 'rsvp.html'), rsvp.replace('id="form"', 'id="f"').replace(/name="status"/g, 'name="s"'));
+  const gone = missing(want, tmp).join('\n');
+  assert.match(gone, /rsvp\.html: id form/);
+  assert.match(gone, /rsvp\.html: form field name status/);
+  fs.rmSync(path.join(tmp, 'menu.html'));
+  assert.match(missing(want, tmp).join('\n'), /menu\.html: page is missing/);
+
+  // hooks found through helper calls, app.js's own hooks, and the radio values the API receives
+  assert.ok(want['index.html'].ids.includes('hero-img') && want['index.html'].ids.includes('nav'));
+  assert.ok(want['rsvp.html'].radios.includes('status=maybe') && want['rsvp.html'].radios.includes('sleep=request_room'));
+  const edit = (page, f) => {
+    const t2 = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'hooks-'));
+    for (const p of pages) fs.writeFileSync(path.join(t2, p), fs.readFileSync(path.join(dir, p), 'utf8'));
+    fs.writeFileSync(path.join(t2, page), f(fs.readFileSync(path.join(t2, page), 'utf8')));
+    return missing(want, t2).join('\n');
+  };
+  assert.match(edit('index.html', (h) => h.replace('id="hero-img"', 'id="h"')), /index\.html: id hero-img/);
+  assert.match(edit('index.html', (h) => h.replace('id="nav"', 'id="n"')), /index\.html: id nav/);
+  assert.match(edit('rsvp.html', (h) => h.replace('value="request_room"', 'value="room"')), /rsvp\.html: radio option sleep=request_room/);
 });

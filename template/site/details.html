@@ -27,12 +27,13 @@
       }
       const cal = App.calendar(ev, me);
       const g = me.guest;
-      const days = ev.stay_days || [];
+      const days = App.on(ev, 'stay') ? ev.stay_days || [] : [];
       const confirmed = (me.remind_days || []).filter((d) => g['confirmed_' + d])
         .map((d) => `<span class="chip yes">Confirmed · ${d}-day check</span>`).join(' ');
       const mapUrl = me.address ? 'https://maps.apple.com/?q=' + encodeURIComponent(me.address) : '';
       const sleep = { request_room: 'Room requested' + (g.assigned_room ? `, assigned: ${esc(g.assigned_room)}` : ' (the host will confirm)'),
         anywhere: 'Down to sleep anywhere', not_staying: 'Not staying over' }[g.sleep] || '';
+      const sleepNote = App.on(ev, 'stay') ? sleep : '';
       // Static notes from the host; each shows only when its module is on and has something to say.
       const section = (label, html) => `<section class="card split"><p class="eyebrow">${label}</p><div>${html}</div></section>`;
       const { vibe, gift_exchange: gift } = ev;
@@ -42,9 +43,9 @@
           [vibe.theme && `<p class="big">${esc(vibe.theme)}</p>`, vibe.dress_code && `<p class="muted">Dress code: ${esc(vibe.dress_code)}</p>`].filter(Boolean).join('')),
         App.on(ev, 'gift_exchange') && gift && section('Gift exchange',
           `<p class="big">${swap[gift.kind]}</p>${gift.limit ? `<p class="muted">Keep it to ${esc(gift.limit)}.</p>` : ''}`),
-        App.on(ev, 'activities') && ev.activity_seeds?.length && section('Games & activities',
-          (ev.activities_intro ? `<p>${esc(ev.activities_intro)}</p>` : '') + ev.activity_seeds.map((a) =>
-            `<h3>${esc(a.title)}</h3>${a.details ? `<p class="muted">${esc(a.details)}</p>` : ''}`).join('')),
+        App.on(ev, 'activities') && section('Games & activities',
+          (ev.activities_intro ? `<p>${esc(ev.activities_intro)}</p>` : '') + '<div id="games"></div>' +
+          '<p class="actions"><button type="button" class="btn ghost" id="addGame">Add a game or activity</button></p>'),
       ].filter(Boolean).join('');
       main.innerHTML = `
         <div class="page-head"><p class="eyebrow">You're coming</p>
@@ -68,10 +69,78 @@
         <section class="card split">
           <p class="eyebrow">Your RSVP</p>
           <div><p class="big">${esc(g.adults)} adult(s), ${esc(g.kids || 0)} kid(s)${g.party_names ? ': ' + esc(g.party_names) : ''}</p>
-          ${sleep ? `<p class="muted">${sleep}</p>` : ''}
+          ${sleepNote ? `<p class="muted">${sleepNote}</p>` : ''}
           ${g.dietary ? `<p class="muted">Dietary: ${esc(g.dietary)}</p>` : ''}
           <p><a class="more" href="${App.link('rsvp.html')}">Change your RSVP</a></p></div>
-        </section>${extras}`;
+        </section>${extras}
+        <dialog id="gameDlg" aria-labelledby="gameTitle"><form id="gameForm" method="dialog">
+          <h2 id="gameTitle">Add a game or activity</h2>
+          <p class="muted">You'd be the one running it. Everyone coming will see it here.</p>
+          <label id="gameIdeasLabel">Ideas</label>
+          <div class="choices" id="gameIdeas" aria-labelledby="gameIdeasLabel"></div>
+          <label for="gameName">Or write your own</label>
+          <input type="text" id="gameName" name="title" maxlength="80" placeholder="e.g. Charades" required>
+          <label for="gameDetails">How does it work? <span class="muted">(optional)</span></label>
+          <textarea id="gameDetails" name="details" maxlength="300"></textarea>
+          <p class="muted" id="gameErr" role="alert" hidden></p>
+          <p class="actions"><button class="btn primary" type="submit">Add it</button><button class="btn ghost" type="button" data-close>Cancel</button></p>
+        </form></dialog>`;
+      if (App.on(ev, 'activities')) {
+        const dlg = $('#gameDlg'), form = $('#gameForm'), err = $('#gameErr'), go = form.querySelector('[type=submit]');
+        let added = [];
+        const draw = () => {
+          const seeds = ev.activity_seeds || [];
+          $('#games').innerHTML = seeds.concat(added).map((a) =>
+            `<h3>${esc(a.title)}</h3>${a.details ? `<p class="muted">${esc(a.details)}</p>` : ''}` +
+            (a.by ? `<p class="muted">Run by ${esc(a.by)}${a.mine ? ' (you)' : ''}</p>` : '') +
+            (a.mine ? `<button type="button" class="btn ghost small" data-remove="${esc(a.id)}">Remove</button>` : '')).join('')
+            || '<p class="muted">Nothing yet. Add the first one!</p>';
+          const taken = new Set(added.map((a) => a.title.toLowerCase()));
+          $('#gameIdeas').innerHTML = seeds.filter((a) => !taken.has(a.title.toLowerCase()))
+            .map((a) => `<button type="button" class="btn ghost small" data-idea="${esc(a.title)}">${esc(a.title)}</button>`).join('');
+        };
+        const load = async () => { added = (await App.api('board')).activities || []; draw(); };
+        draw();
+        $('#addGame').addEventListener('click', () => {
+          form.reset();
+          err.hidden = true;
+          dlg.showModal();
+          form.elements.title.focus();
+        });
+        // A click on the dialog itself lands on its padding or on the backdrop; only a click outside its box closes it.
+        dlg.addEventListener('click', (e) => {
+          if (e.target !== e.currentTarget) return;
+          const r = dlg.getBoundingClientRect();
+          if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+        });
+        document.addEventListener('click', async (e) => {
+          const t = e.target.closest('[data-idea],[data-remove],[data-close]');
+          if (!t) return;
+          if (t.dataset.close) dlg.close();
+          if (t.dataset.idea) { form.elements.title.value = t.dataset.idea; form.elements.details.focus(); }
+          if (t.dataset.remove) {
+            try { await App.api('removeActivity', { id: t.dataset.remove }); await load(); } catch (e2) { App.toast(e2.message); }
+          }
+        });
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          err.hidden = true;
+          go.disabled = true;
+          try {
+            await App.api('addActivity', { title: form.elements.title.value, details: form.elements.details.value });
+            form.reset();
+            dlg.close();
+            App.toast('Added. You are running it!');
+          } catch (e2) {
+            err.textContent = e2.message;
+            err.hidden = false;
+            return;
+          } finally { go.disabled = false; }
+          try { await load(); } catch (e2) { App.toast(e2.message); }
+          $('#addGame').focus();
+        });
+        await load();
+      }
     })();
   </script>
 </body>

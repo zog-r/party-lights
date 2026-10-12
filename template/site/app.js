@@ -55,6 +55,12 @@ const App = (() => {
       plusOne: r.ask_plus_one === true, dietary: r.ask_dietary ?? (!!ev.features && on(ev, 'dietary')) };
   };
 
+  // Markup tagged data-module="a b" is for those modules (any one on keeps it). Anything else is removed so copy about
+  // features the host never described cannot show. Pages call this through boot(), before their own render runs.
+  const prune = (ev) => document.querySelectorAll('[data-module]').forEach((el) => {
+    if (!el.dataset.module.split(/\s+/).some((m) => on(ev, m))) el.remove();
+  });
+
   function nav() {
     const here = pageName() + '.html';
     const items = [['index.html', 'Invite'], ['house.html', 'The house'], ['rsvp.html', 'RSVP'], ['details.html', 'Details'],
@@ -101,6 +107,7 @@ const App = (() => {
   async function boot({ gate: useGate = true } = {}) {
     const ev = await event();
     document.querySelectorAll('a.brand').forEach((b) => (b.textContent = ev.brand));
+    prune(ev);
     if (GAS) { rewriteLinks(); fragmentLinks(); }
     const mod = PAGE_MODULE[pageName() + '.html'];
     if (mod && !on(ev, mod)) {
@@ -174,5 +181,5 @@ const App = (() => {
     return { google, ics: 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics) };
   }
 
-  return { token, params, gas: GAS, event, api, boot, nav, on, rsvpOpts, toast, $, esc, link, calendar, calendarSpan, utcStamp };
+  return { token, params, gas: GAS, event, api, boot, nav, on, prune, rsvpOpts, toast, $, esc, link, calendar, calendarSpan, utcStamp };
 })();

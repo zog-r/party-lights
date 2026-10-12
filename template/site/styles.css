@@ -151,3 +151,10 @@ button.plate.empty:hover { background: rgb(246 240 230 / 14%); border-style: sol
 .small-meta { font: 600 .68rem var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--mist); }
 #trips .card .choices { margin-top: 20px; }
 .narrow:not(.card), .card.narrow > * { max-width: 760px; } /* hairline still spans the container */
+
+/* Popup for "add an item" actions (native <dialog>; Esc closes it). */
+dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 32px; border: 1px solid var(--line); border-radius: 16px; background: var(--pine-2); color: var(--linen); }
+dialog::backdrop { background: rgb(5 10 20 / 70%); }
+dialog h2 { margin-top: 0; }
+dialog .actions { margin-top: 28px; }
+dialog [role=alert] { margin: 16px 0 0; color: #ff9b8f; }

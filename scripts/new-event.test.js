@@ -58,3 +58,30 @@ test('an app built from a menu-off event with a host-set when_text passes its ow
   execFileSync('node', [script, dir, '--event', evFile], { stdio: 'pipe' });
   execFileSync('npm', ['test'], { cwd: dir, stdio: 'pipe' });
 });
+
+test('a menu-only dinner is built without the house and trips pages or the photos nobody uses', () => {
+  const ev = JSON.parse(fs.readFileSync(path.join(__dirname, '../template/site/event.json'), 'utf8'));
+  ev.features = ['menu', 'policies', 'reminders'];
+  ev.images = { hero: ev.images.hero };
+  for (const k of ['house', 'rooms', 'stay', 'schedule', 'trip_seeds', 'trips_intro']) delete ev[k];
+  const evFile = path.join(tmp(), 'event.json');
+  fs.writeFileSync(evFile, JSON.stringify(ev));
+  const dir = path.join(tmp(), 'dinner');
+  execFileSync('node', [script, dir, '--event', evFile], { stdio: 'pipe' });
+  const site = path.join(dir, 'site');
+  for (const gone of ['house.html', 'trips.html', 'guests.html']) assert.ok(!fs.existsSync(path.join(site, gone)), gone);
+  assert.ok(fs.existsSync(path.join(site, 'menu.html')));
+  assert.deepEqual(fs.readdirSync(path.join(site, 'assets')), ['hero.jpg']);
+  execFileSync('npm', ['test'], { cwd: dir, stdio: 'pipe' });
+  assert.deepEqual(require('../template/scripts/page-hooks.js').check(dir), []);
+});
+
+test('an event with no features list keeps every page', () => {
+  const ev = JSON.parse(fs.readFileSync(path.join(__dirname, '../template/site/event.json'), 'utf8'));
+  delete ev.features;
+  const evFile = path.join(tmp(), 'event.json');
+  fs.writeFileSync(evFile, JSON.stringify(ev));
+  const dir = path.join(tmp(), 'all');
+  execFileSync('node', [script, dir, '--event', evFile], { stdio: 'pipe' });
+  for (const p of ['house', 'trips', 'menu', 'guests']) assert.ok(fs.existsSync(path.join(dir, `site/${p}.html`)), p);
+});

@@ -124,14 +124,14 @@
 </head>
 <body>
   <header class="site"><div class="inner"><a class="brand" href="index.html">&nbsp;</a>
-    <nav id="nav"><a href="index.html" aria-current="page">Invite</a><a href="house.html">The house</a><a href="rsvp.html">RSVP</a><a href="details.html">Details</a><a href="menu.html">The menu</a><a href="guests.html">Guests</a><a href="trips.html">Day trips</a></nav>
+    <nav id="nav"><a href="index.html" aria-current="page">Invite</a><a data-module="place" href="house.html">The house</a><a href="rsvp.html">RSVP</a><a href="details.html">Details</a><a data-module="menu" href="menu.html">The menu</a><a data-module="guest_list" href="guests.html">Guests</a><a data-module="trips" href="trips.html">Day trips</a></nav>
   </div></header>
 
   <section class="hero">
     <div class="lede">
       <p class="sc" id="hello" hidden>You're invited</p>
       <h1 id="title">&nbsp;</h1>
-      <p class="meta"><span id="when"></span><span id="where"></span><span id="stay"></span></p>
+      <p class="meta"><span id="when"></span><span id="where"></span><span id="stay" data-module="stay"></span></p>
       <div class="actions"><a class="btn" id="cta" href="#reply">RSVP</a></div>
     </div>
     <figure class="window">
@@ -144,16 +144,16 @@
 
     <section class="weekend wrap">
       <div>
-        <h2 id="nick">The weekend</h2>
+        <h2 id="nick"></h2>
         <p id="desc"></p>
-        <details class="more-about"><summary>Read the full plan</summary><p id="full"></p></details>
+        <details class="more-about" id="moreAbout"><summary>Read more</summary><p id="full"></p></details>
       </div>
-      <div id="daysWrap">
+      <div id="daysWrap" data-module="schedule">
         <div class="days" id="days"></div>
       </div>
     </section>
 
-    <section class="house wrap" id="houseSec">
+    <section class="house wrap" id="houseSec" data-module="place">
       <figure class="bleed"><img id="feature-img" alt=""></figure>
       <div class="spec">
         <h2>The house</h2>
@@ -179,7 +179,7 @@
           <label class="count" id="kidsWrap">Kids <input type="number" name="kids" min="0" max="20" value="0" inputmode="numeric"></label>
           <button type="submit">Send RSVP</button>
         </div>
-        <p class="fine">Want a room, or a reminder closer to the day? <a class="more" href="rsvp.html" data-link>Add the details</a></p>
+        <p class="fine" data-module="reminders stay rooms"><span id="fineAsk"></span> <a class="more" href="rsvp.html" data-link>Add the details</a></p>
         <p class="note" id="note" role="status"></p>
       </form>
     </div>
@@ -197,10 +197,13 @@
       const { $, esc } = App;
       const text = (id, v) => ($('#' + id).textContent = v || '');
       const img = (id, im) => Object.assign($('#' + id), { src: im.src, alt: im.alt });
+      text('fineAsk', 'Want ' + [(App.on(ev, 'stay') || App.on(ev, 'rooms')) && 'a room', App.on(ev, 'reminders') && 'a reminder closer to the day'].filter(Boolean).join(', or ') + '?');
       const lead = ev.title_em && ev.title.endsWith(ev.title_em) ? ev.title.slice(0, -ev.title_em.length).trim() : ev.title;
       $('#title').innerHTML = esc(lead) + (lead !== ev.title ? ` <em>${esc(ev.title_em)}</em>` : '');
       text('when', ev.when_text); text('where', ev.area); text('stay', ev.stay_text);
+      text('nick', App.on(ev, 'stay') ? 'The weekend' : 'The day');
       text('desc', ev.intro); text('full', ev.description);
+      $('#moreAbout').hidden = !ev.description;
       text('reply-title', ev.reply.title); text('reply-sub', ev.reply.sub);
       img('hero-img', ev.images.hero);
       const o = App.rsvpOpts(ev);
