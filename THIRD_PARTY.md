@@ -4,7 +4,7 @@ Copied (not linked) from other repos by `node scripts/vendor.js`, pinned in `ven
 
 | Component | Source | Commit | License | Used for |
 |---|---|---|---|---|
-| `skills/design-loop`, `agents/polish.md` | https://github.com/zog-r/wildling-design-loop | `0016346` | MIT | The design phase: seeds directions, runs rounds judged by a blind critic. |
+| `skills/design-loop`, `agents/polish.md` | https://github.com/zog-r/wildling-design-loop | `e75cdbb` | MIT | The design phase: seeds directions, runs rounds judged by a blind critic. |
 | `skills/cool-uncle-shades` | https://github.com/zog-r/cool-uncle | `a67e556` | MIT | Final UX critique before publish. |
 | `skills/markup` | https://github.com/zog-r/markup | `2edfbd0` | MIT | Click-to-annotate approval in the Claude desktop browser. |
 
