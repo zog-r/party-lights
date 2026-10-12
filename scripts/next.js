@@ -16,7 +16,7 @@ const TITLES = {
 const WHY = {
   describe: 'Tell me about your event in your own words, and I will fill in the details and ask only what is missing.',
   build: 'I turn your event details into a working invite site with a guest list behind it.',
-  design: 'We can give the site a custom look, or keep the clean default.',
+  design: 'Your invite gets a look of its own, designed around your event. You can keep the plain starter look instead.',
   review: 'A quick honest look at the pages before you see them.',
   approve: 'Click around your invite like a guest would, and tell me what to change.',
   google: 'Your guest list lives in a Google Sheet you own. You will approve access once.',
@@ -150,9 +150,10 @@ async function evaluate({ root = ROOT, home = os.homedir(), state, deps = realDe
   if (!(marks.design === 'skipped' || designDecision(manifest))) {
     return card('design', {
       doctor,
-      run: [`node scripts/design-brief.js --app ${appRel}`],
-      ask: ['Want a custom look (a few minutes, needs python3, Chrome and the claude CLI) or keep the default?',
-        'Keep default: node scripts/next.js --mark design=skipped'],
+      run: [`node scripts/design-brief.js --app ${appRel} --look "<the host's words>"`],
+      ask: ['How should it feel? Colors, mood, anything you have seen and liked (pass their words as --look "...").',
+        'A custom look takes a few minutes and needs python3, Chrome and the claude CLI.',
+        'Opt out and keep the plain starter look: node scripts/next.js --mark design=skipped'],
     });
   }
   done.push('design');

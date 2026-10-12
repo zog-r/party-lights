@@ -24,7 +24,7 @@ Thanksgiving / Friendsgiving, Christmas, Hanukkah, Kwanzaa, New Year's Eve, and 
 - Node 20 or newer. Get it at https://nodejs.org, or `brew install node` on a Mac.
 - About 30 to 45 minutes.
 
-Only if you want a custom look: Python 3 and Google Chrome.
+For the custom look (each invite gets its own; you can opt out): Python 3, Google Chrome and the Claude CLI.
 
 The pages, the guest list and the backend all run on your Google account. You need no other account.
 
