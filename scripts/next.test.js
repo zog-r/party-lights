@@ -70,6 +70,7 @@ test('walks every phase in order', async () => {
   c = await t.run();
   assert.equal(c.phase, 'google');
   assert.ok(c.links.some((l) => l.url === 'https://docs.google.com/spreadsheets/d/PID'));
+  assert.match(c.ask.join('\n'), /Advanced[\s\S]*\(unsafe\)/);
   t.state.marks.sheet = true;
 
   // gas hosting (default): the exec URL must serve the event
@@ -90,6 +91,9 @@ test('walks every phase in order', async () => {
   assert.equal(c.phase, 'smoke');
   assert.ok(c.links.some((l) => l.url === 'https://script.google.com/macros/s/AKfy-1/exec'));
   assert.ok(c.ask.some((a) => /page=admin&k=/.test(a)));
+  const seq = ['add a row', 'Generate missing tokens', 'Email invites to selected rows', 'link from that email', '5 minutes'];
+  const at = seq.map((k) => c.ask.findIndex((a) => a.includes(k)));
+  assert.ok(at.every((i) => i >= 0) && at.every((i, n) => n === 0 || i > at[n - 1]), `smoke sequence: ${at}`);
   write(path.join(t.root, '.party-lights/event.json'), JSON.stringify({ title: 'Party' }));
   t.dep.page = { status: 200, body: '<title>Party</title>' };
 
@@ -114,6 +118,8 @@ test('walks every phase in order', async () => {
   assert.equal(c.phase, 'done');
   assert.equal(c.done.length, 10);
   assert.ok(c.notes.length >= 3);
+  assert.ok(c.notes.some((n) => /tell(ing)? Claude/.test(n)));
+  for (const k of ['why', 'ask', 'notes']) assert.ok(![].concat(c[k] || []).some((x) => /\.json/.test(x)), `${k} mentions .json`);
 });
 
 test('invalid event stays in describe even when marked', async () => {
@@ -162,8 +168,15 @@ test('design is done by a manifest stop decision', async () => {
   assert.equal(designDecision({ decision: 'CONTINUE' }), null);
   const t = setup();
   write(path.join(t.root, '.party-lights/event.json'), '{"title":"Party"}');
-  write(path.join(t.app, 'site/event.json'), '{}');
+  fs.cpSync(path.join(__dirname, '../template/site'), path.join(t.app, 'site'), { recursive: true });
   write(path.join(t.app, '.design-loop/manifest.json'), JSON.stringify({ decision: 'STOP_MAX' }));
   t.state.marks.describe = true;
+  assert.equal((await t.run()).phase, 'design'); // starter hero still in place: the emails would show it
+  write(path.join(t.app, 'site/assets/hero.jpg'), 'new hero');
   assert.equal((await t.run()).phase, 'review');
+  const menu = path.join(t.app, 'site/menu.html');
+  fs.writeFileSync(menu, fs.readFileSync(menu, 'utf8').replace(/id="addDlg"/, 'id="gone"'));
+  const c = await t.run();
+  assert.equal(c.phase, 'design'); // a redesign that dropped a hook can't pass
+  assert.match(c.run[0], /check-hooks\.js/);
 });

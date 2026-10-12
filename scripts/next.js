@@ -154,6 +154,7 @@ async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homed
   done.push('build');
 
   // 3 design
+  require('../template/scripts/page-hooks.js').snapshot(root);
   const manifest = readJSON(path.join(root, '.design-loop/manifest.json'));
   if (!(marks.design === 'skipped' || designDecision(manifest))) {
     return card('design', {
@@ -163,6 +164,18 @@ async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homed
         'A custom look takes a few minutes and needs python3, Chrome and the claude CLI.',
         `Opt out and keep the plain starter look: ${nx('next.js', '--mark design=skipped')}`],
     });
+  }
+  if (marks.design !== 'skipped' && fs.existsSync(path.join(root, 'site'))) {
+    const hooks = require('../template/scripts/page-hooks.js');
+    let broken = false, err = null;
+    try { broken = hooks.check(root).length || hooks.heroUnchanged(root).length; } catch (e) { err = e.message; }
+    if (err) return card('design', { why: 'I could not check the pages against the starter hooks.', ask: [err], run: [nx('check-hooks.js', '--app .')] });
+    if (broken) {
+      return card('design', {
+        why: 'The new look dropped pieces the RSVP, menu or Sheet need, or left the starter hero picture the emails use. I will fix that before we go on.',
+        run: [nx('check-hooks.js', '--app .')],
+      });
+    }
   }
   done.push('design');
 
@@ -192,8 +205,9 @@ async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homed
   if (!marks.sheet) {
     return card('google', {
       why: 'Your Sheet exists. Open it, reload, then run Invite app, Set up / repair tabs, and approve access. That also turns on reminders and alerts.',
-      ask: ['In the Sheet, the Invite app menu appears next to Help after a few seconds (reload if not) → Invite app → Set up / repair tabs → Continue → pick your account → on "Google hasn\'t verified this app", click Advanced → Go to <your event> (unsafe) → Allow. It says unsafe because the script is yours and Google hasn\'t reviewed it; it runs only in your account.'],
-      links: sheetLinks(clasp), ask: ['Tell me when the tabs are set up.', `Then: ${nx('next.js', '--mark sheet')}`],
+      ask: ['In the Sheet, the Invite app menu appears next to Help after a few seconds (reload if not) → Invite app → Set up / repair tabs → Continue → pick your account → on "Google hasn\'t verified this app", click Advanced → Go to <your event> (unsafe) → Allow. It says unsafe because the script is yours and Google hasn\'t reviewed it; it runs only in your account.',
+        'Tell me when the tabs are set up.', `Then: ${nx('next.js', '--mark sheet')}`],
+      links: sheetLinks(clasp),
     });
   }
   done.push('google');
@@ -234,7 +248,13 @@ async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homed
   const adminNote = hosting === 'vercel' && siteEv.site_url
     ? `Your host page: ${base}/admin.html?k=<your admin_key from the Sheet's Settings>`
     : `Your host page: add ?page=admin&k=<your admin_key from the Sheet's Settings> to ${base}`;
-  if (!marks.smoke) return card('smoke', { links: live, ask: ['RSVP yes as yourself, check the address shows, and that the alert arrives (up to 5 minutes).', adminNote, `Then: ${nx('next.js', '--mark smoke')}`] });
+  if (!marks.smoke) return card('smoke', { links: live, ask: [
+    'In your Sheet\'s Guests tab, add a row for yourself: name, email, phone.',
+    'Menu: Invite app, then Generate missing tokens.',
+    'Select your row, then Invite app, then Email invites to selected rows.',
+    'Open the link from that email, RSVP yes, and check the address shows.',
+    'The host alert should arrive within 5 minutes.',
+    adminNote, `Then: ${nx('next.js', '--mark smoke')}`] });
   done.push('smoke');
   if (!marks.invite) return card('invite', { links: live, ask: [adminNote, 'Guest links get ?t=<token> added by the Sheet\'s invite buttons.', `Add guests, Generate missing tokens, send invites. Then: ${nx('next.js', '--mark invite')}`] });
   done.push('invite');
@@ -248,7 +268,7 @@ async function evaluate({ root = process.cwd(), plugin = PLUGIN, home = os.homed
       'Watch RSVPs: the Guests tab and the admin page.',
       adminNote,
       'Your event lives in the Sheet: the guest list, settings and RSVPs are all there.',
-      'Edit the site later: change site/event.json in this folder, then run npm run deploy. Links already sent keep working.',
+      'Change anything later by telling Claude here what to change; it updates the site and redeploys. Links already sent keep working.',
     ],
     host_run_later: ['npm run deploy'],
   };
