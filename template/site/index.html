@@ -231,6 +231,22 @@
       text('foot-when', `${day(main, { weekday: 'long', month: 'long', day: 'numeric' })} · ${ev.area}`);
     }
 
+    // An answered guest sees the status card (with a way to change it) instead of the quick form.
+    function showStatus(g) {
+      const { $, esc } = App;
+      const label = { yes: "You're coming!", maybe: 'You said maybe', no: "You can't make it" }[g.status];
+      const answered = !!label;
+      $('#reply').closest('.reply-col').hidden = answered;
+      if (answered) {
+        $('#cta').textContent = 'Update your RSVP';
+        $('#cta').href = App.link('rsvp.html');
+        $('#status').hidden = false;
+        $('#status').innerHTML = `<h2>${esc(label)}</h2>` + (g.status === 'yes'
+          ? `<p>The address, directions, and calendar links are unlocked.</p><a class="btn" href="${App.link('details.html')}">Get details</a> `
+          : '') + `<a class="btn ghost" href="${App.link('rsvp.html')}">Change RSVP</a>`;
+      }
+    }
+
     (async () => {
       const { $, esc } = App;
       renderInvite(await App.event());
@@ -248,6 +264,7 @@
         try {
           const out = await App.api('rsvp', { rsvp });
           Object.assign(me, out);
+          showStatus(me.guest);
           $('#note').innerHTML = rsvp.status === 'yes' ? `You're in. <a class="more" href="${App.link('details.html')}">Get the address &amp; directions</a>` : rsvp.status === 'maybe' ? 'Got it. Update anytime.' : "Thanks for letting us know. We'll miss you!";
         } catch (err) { $('#note').textContent = err.message; }
       });
@@ -260,14 +277,7 @@
       const g = me.guest;
       $('#hello').textContent = `${g.name.split(' ')[0]}, you're invited`;
       $('#hello').hidden = false;
-      const label = { yes: "You're coming!", maybe: 'You said maybe', no: "You can't make it", invited: '' }[g.status];
-      if (g.status !== 'invited') {
-        $('#cta').textContent = 'Update your RSVP';
-        $('#status').hidden = false;
-        $('#status').innerHTML = `<h2>${esc(label)}</h2>` + (g.status === 'yes'
-          ? `<p>The address, directions, and calendar links are unlocked.</p><a class="btn" href="${App.link('details.html')}">Get details</a>`
-          : `<a class="btn ghost" href="${App.link('rsvp.html')}">Change RSVP</a>`);
-      }
+      showStatus(g);
     })();
   </script>
 </body>
