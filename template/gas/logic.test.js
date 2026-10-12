@@ -177,7 +177,7 @@ test('settingsRows: only blank email wording is refilled; blank ntfy/host/admin 
   const blank = (k) => ({ value: '' });
   const keys = ['ntfy_topic', 'admin_key', 'host_email', 'guest_invite_email', 'notify_rsvp_email', 'guest_invite_subject', 'guest_remind_body'];
   const existing = Object.fromEntries(keys.map((k) => [k, blank(k)]));
-  const v = Object.fromEntries(L.settingsRows(['rsvp'], existing, { host_email: 'h@x.test', ntfy_topic: 't', admin_key: 'k', modules: {} })
+  const v = Object.fromEntries(L.settingsRows(['rsvp'], existing, { host_email: 'h@example.com', ntfy_topic: 't', admin_key: 'k', modules: {} })
     .filter((r) => r.key).map((r) => [r.key, r.value]));
   assert.deepEqual([v.ntfy_topic, v.admin_key, v.host_email], ['', '', '']);
   assert.equal(v.guest_invite_email, true);
