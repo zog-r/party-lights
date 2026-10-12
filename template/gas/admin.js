@@ -30,7 +30,8 @@ function setup() {
   // Read before the tab loop rewrites headers: older sheets have key | value | note.
   const existing = {};
   if (sheet_('Settings')) rows_('Settings').forEach((r) => (existing[r.key] = r));
-  for (const [name, head] of Object.entries(TABS)) {
+  for (const name of tabNames_()) {
+    const head = TABS[name];
     const sh = ss.getSheetByName(name) || ss.insertSheet(name);
     sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold');
     sh.setFrozenRows(1);
@@ -55,7 +56,7 @@ function setup() {
   sh.setColumnWidth(2, 260);
   sh.setColumnWidth(3, 220);
   sh.setColumnWidth(4, 480);
-  if (!rows_('Trips').length) {
+  if (modOn_('trips') && !rows_('Trips').length) {
     for (const t of EVENT.trip_seeds) {
       appendRow_('Trips', { id: Utilities.getUuid().slice(0, 8), title: t.title, details: t.details, created_at: now_() });
     }

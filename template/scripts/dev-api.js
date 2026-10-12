@@ -100,7 +100,7 @@ function seed(ctx) {
     appendRow_('Guests', { token: 'test1', name: 'Alex Tester', email: 'alex@example.com', phone: '5550001111', status: 'yes', adults: 2, kids: 1, remind_email: true });
     appendRow_('Guests', { token: 'test2', name: 'Blair Sample', email: 'blair@example.com', phone: '5550002222', status: 'invited' });
     appendRow_('Guests', { token: 'test3', name: 'Casey Demo', email: '', phone: '5550003333', status: 'maybe', adults: 1, remind_text: true });
-    if (EVENT.food_slots.length) {
+    if (modOn_('menu') && EVENT.food_slots.length) {
       appendRow_('Food', { id: 'f1', token: 'test1', slot: EVENT.food_slots[0].id, item: 'Prime rib', created_at: now_() });
       appendRow_('Food', { id: 'f2', token: 'test3', slot: EVENT.food_slots.at(-1).id, item: 'Hot cocoa', created_at: now_() });
     }

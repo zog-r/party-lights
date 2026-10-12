@@ -9,8 +9,12 @@ const TABS = {
   },
   Food: ['id', 'token', 'slot', 'item', 'created_at'],
   Trips: ['id', 'proposer_token', 'title', 'details', 'day', 'host_token', 'joiner_tokens', 'created_at'],
+  Activities: ['id', 'token', 'title', 'details', 'created_at'],
   Log: ['ts', 'token', 'action', 'detail', 'notified'],
 };
+
+// Tabs that exist only when their module is on; every other tab is core.
+const TAB_MODULE = { Food: 'menu', Trips: 'trips', Activities: 'activities' };
 
 // ?ping=1 answers JSON (the setup scripts use it); anything else serves one of the generated pages (scripts/build-gas-site.js).
 function doGet(e) {
@@ -99,6 +103,7 @@ const ACTIONS = {
   },
 
   addFood(req, g) {
+    requireMod_('menu');
     if (g.status !== 'yes' && g.status !== 'maybe') throw new Error('RSVP first, then pick a dish.');
     if (!EVENT.food_slots.some((s) => s.id === req.slot)) throw new Error('Unknown menu slot.');
     const item = cleanText(req.item, 80);
@@ -126,6 +131,7 @@ const ACTIONS = {
     const names = Object.fromEntries(guests.map((x) => [x.token, firstName_(x.name)]));
     const out = board(guests, settings_());
     out.menu = rows_('Food').map((f) => ({ slot: f.slot, item: f.item, by: names[f.token] || '', mine: f.token === g.token }));
+    out.activities = rows_('Activities').map((a) => ({ id: a.id, title: a.title, details: a.details, by: names[a.token] || '', mine: a.token === g.token }));
     out.trips = rows_('Trips').map((t) => {
       const joiners = splitTokens_(t.joiner_tokens);
       return { id: t.id, title: t.title, details: t.details, day: t.day,
@@ -136,7 +142,32 @@ const ACTIONS = {
     return out;
   },
 
+  // Anyone who is coming can add a game or activity; they are the one running it.
+  addActivity(req, g) {
+    requireMod_('activities');
+    if (g.status !== 'yes' && g.status !== 'maybe') throw new Error('RSVP first, then add a game.');
+    const title = cleanText(req.title, 80);
+    if (!title) throw new Error('What is the game or activity?');
+    return withLock_(() => {
+      const id = Utilities.getUuid().slice(0, 8);
+      appendRow_('Activities', { id, token: g.token, title, details: cleanText(req.details, 300), created_at: now_() });
+      log_(g.token, 'activity', `${g.name} added: ${title}`);
+      return { id };
+    });
+  },
+
+  removeActivity(req, g) {
+    return withLock_(() => {
+      const a = rows_('Activities').find((x) => x.id === req.id && x.token === g.token);
+      if (!a) throw new Error('Not found.');
+      sheet_('Activities').deleteRow(a._row);
+      log_(g.token, 'activity', `${g.name} removed ${a.title}`);
+      return { removed: req.id };
+    });
+  },
+
   addTrip(req, g) {
+    requireMod_('trips');
     const title = cleanText(req.title, 80);
     if (!title) throw new Error('Give the trip a name.');
     return withLock_(() => {
@@ -187,7 +218,9 @@ function sheet_(name) {
   return SpreadsheetApp.getActive().getSheetByName(name);
 }
 
+// A tab whose module is off was never created: reads see no rows.
 function rows_(name) {
+  if (!sheet_(name)) return [];
   const values = sheet_(name).getDataRange().getValues();
   const head = values.shift();
   return values
@@ -199,12 +232,31 @@ function rows_(name) {
     .filter((o) => o[head[0]] !== '');
 }
 
+function requireMod_(id) {
+  if (!modOn_(id)) throw new Error('That part of the invite is turned off.');
+}
+
+// Tabs for the modules this event uses (all core tabs always). Never touches a tab that already exists.
+function tabNames_() {
+  return Object.keys(TABS).filter((n) => !TAB_MODULE[n] || modOn_(TAB_MODULE[n]));
+}
+
+// Writes create a missing tab (a Sheet set up before its module existed, or a module turned on later) rather than crash.
+function writeSheet_(name) {
+  const sh = sheet_(name);
+  if (sh) return sh;
+  const made = SpreadsheetApp.getActive().insertSheet(name);
+  made.getRange(1, 1, 1, TABS[name].length).setValues([TABS[name]]).setFontWeight('bold');
+  made.setFrozenRows(1);
+  return made;
+}
+
 function appendRow_(name, obj) {
-  sheet_(name).appendRow(TABS[name].map((h) => (obj[h] === undefined ? '' : obj[h])));
+  writeSheet_(name).appendRow(TABS[name].map((h) => (obj[h] === undefined ? '' : obj[h])));
 }
 
 function updateRow_(name, row, patch) {
-  const sh = sheet_(name);
+  const sh = writeSheet_(name);
   const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   for (const [k, v] of Object.entries(patch)) {
     const col = head.indexOf(k);
