@@ -146,5 +146,42 @@ test('settingsRows: labels and notes for every row, grouped, existing values kep
   assert.equal(keyed.host_email.value, 'host@example.com');
   assert.equal(keyed.guest_confirmed_email.value, true);
   assert.deepEqual(keyed.custom_thing, { key: 'custom_thing', label: 'custom_thing', value: 'keep', note: 'mine' });
+  assert.match(keyed.guest_invite_body.value, /\{first_name\}.*\{invite_link\}/s);
+  assert.match(keyed.guest_invite_body.note, /keep the \{curly\} parts/);
   assert.match(keyed.ntfy_topic.note, /never sent to guests/i);
+});
+
+test('settingsRows pre-fills built-in email wording, never overwrites an edit, and refills a cleared cell', () => {
+  const run = (existing, modules) => Object.fromEntries(L.settingsRows([], existing, { host_email: '', ntfy_topic: '', admin_key: '', modules })
+    .filter((r) => r.key).map((r) => [r.key, r.value]));
+  const both = { menu: true, trips: true };
+  for (const k of Object.keys(L.GUEST_EMAILS)) {
+    const v = run({}, both);
+    assert.equal(v['guest_' + k + '_subject'], L.defaultCopy(k, 'subject', both));
+    assert.equal(v['guest_' + k + '_body'], L.defaultCopy(k, 'body', both));
+  }
+  const edited = run({ guest_confirmed_body: { value: 'My own words, {first_name}.' }, guest_confirmed_subject: { value: '' } }, both);
+  assert.equal(edited.guest_confirmed_body, 'My own words, {first_name}.');
+  assert.equal(edited.guest_confirmed_subject, L.defaultCopy('confirmed', 'subject', both));
+});
+
+test('confirmed default wording is module-independent', () => {
+  for (const m of [{ menu: true, trips: true }, { menu: false, trips: false }, undefined]) {
+    const b = L.defaultCopy('confirmed', 'body', m);
+    assert.match(b, /\{can_do\}/);
+    assert.doesNotMatch(b, /menu_link|trips_link/);
+  }
+});
+
+test('settingsRows: only blank email wording is refilled; blank ntfy/host/admin stay off; blank toggles keep their default', () => {
+  const blank = (k) => ({ value: '' });
+  const keys = ['ntfy_topic', 'admin_key', 'host_email', 'guest_invite_email', 'notify_rsvp_email', 'guest_invite_subject', 'guest_remind_body'];
+  const existing = Object.fromEntries(keys.map((k) => [k, blank(k)]));
+  const v = Object.fromEntries(L.settingsRows(['rsvp'], existing, { host_email: 'h@x.test', ntfy_topic: 't', admin_key: 'k', modules: {} })
+    .filter((r) => r.key).map((r) => [r.key, r.value]));
+  assert.deepEqual([v.ntfy_topic, v.admin_key, v.host_email], ['', '', '']);
+  assert.equal(v.guest_invite_email, true);
+  assert.equal(v.notify_rsvp_email, true);
+  assert.equal(v.guest_invite_subject, L.defaultCopy('invite', 'subject'));
+  assert.equal(v.guest_remind_body, L.defaultCopy('remind', 'body'));
 });

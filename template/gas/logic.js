@@ -103,12 +103,33 @@ const NOTIFY_PHRASES = {
   trip: 'adds or joins a day trip',
 };
 
+// `subject` and `body` are the built-in wording, written with the same {placeholders} a host may use. They are the one
+// source for both what gets sent when a Settings cell is blank and what setup pre-fills into that cell. `m` says which
+// optional modules are on; no default needs it now (module-dependent wording is a send-time placeholder).
 const GUEST_EMAILS = {
-  invite: { name: 'Invite email', when: 'when you use Invite app → Email invites', vars: '{first_name} {title} {when} {invite_link}' },
-  confirmed: { name: '"You\'re in" email', when: 'the first time a guest RSVPs yes', vars: '{first_name} {title} {when} {invite_link} {menu_link} {trips_link} {calendar_link}' },
-  remind: { name: 'Reminder email', when: 'on the reminder days, to guests who opted in', vars: '{first_name} {title} {when} {days} {invite_link}' },
-  confirm: { name: 'Still-coming check email', when: 'on the confirm days, to guests who said yes', vars: '{first_name} {title} {when} {days} {invite_link}' },
+  invite: { name: 'Invite email', when: 'when you use Invite app → Email invites', vars: '{first_name} {title} {when} {invite_link}',
+    subject: () => "You're invited: {title}",
+    body: () => 'Hi {first_name}!\n\nYou\'re invited to {title}: {when}.\n\nSee the details and RSVP: {invite_link}' },
+  confirmed: { name: '"You\'re in" email', when: 'the first time a guest RSVPs yes', vars: '{first_name} {title} {when} {invite_link} {menu_link} {trips_link} {calendar_link} {can_do}',
+    subject: () => "You're in! {title}",
+    // {can_do} is filled when the email is sent, from the modules that are on, so this text never goes stale.
+    body: () => ['Hi {first_name}!',
+      "You're confirmed for {title} ({when}). Add it to your calendar: {calendar_link}.",
+      '{can_do}See everything on {invite_link}.',
+      'Expect a reminder to confirm your plans closer to the day!',
+      "I'm excited to host you!",
+      'Cheers!\nYour host'].join('\n\n') },
+  remind: { name: 'Reminder email', when: 'on the reminder days, to guests who opted in', vars: '{first_name} {title} {when} {days} {invite_link}',
+    subject: () => '{days} days until {title}',
+    body: () => 'Hi {first_name}!\n\n{days} days until {title} ({when}).\n\nYour invite: {invite_link}' },
+  confirm: { name: 'Still-coming check email', when: 'on the confirm days, to guests who said yes', vars: '{first_name} {title} {when} {days} {invite_link}',
+    subject: () => 'Still coming? Confirm for {title}',
+    body: () => 'Hi {first_name}!\n\n{title} is {days} days out. Still coming? Tap to confirm: {invite_link}' },
 };
+
+function defaultCopy(kind, field, modules) {
+  return GUEST_EMAILS[kind][field](modules || {});
+}
 
 function guestEmailOn(kind, settings) {
   const v = settings['guest_' + kind + '_email'];
@@ -161,8 +182,10 @@ function settingsRows(actions, existing, runtime) {
       ['guest_reply_to', 'Reply-to email', '', 'Where guest replies go. Blank uses your Google account address.'],
       ...Object.entries(GUEST_EMAILS).flatMap(([k, e]) => [
         ['guest_' + k + '_email', `Send the ${e.name}`, true, `Tick to send this email ${e.when}; untick to turn it off.`],
-        ['guest_' + k + '_subject', `${e.name}: subject`, '', `Blank keeps the built-in wording. You can use ${e.vars}.`],
-        ['guest_' + k + '_body', `${e.name}: message`, '', `Blank keeps the built-in wording. Blank line starts a new paragraph. You can use ${e.vars}.`],
+        ['guest_' + k + '_subject', `${e.name}: subject`, defaultCopy(k, 'subject', runtime.modules),
+          `Edit the words, keep the {curly} parts: each one is replaced with that guest's details (${e.vars}). Clear the cell to go back to this wording.`],
+        ['guest_' + k + '_body', `${e.name}: message`, defaultCopy(k, 'body', runtime.modules),
+          `Edit the words, keep the {curly} parts: each one is replaced with that guest's details (${e.vars}). A blank line starts a new paragraph. Clear the cell to go back to this wording.`],
       ]),
     ]],
   ];
@@ -172,7 +195,11 @@ function settingsRows(actions, existing, runtime) {
     out.push({ heading });
     for (const [key, label, dflt, note] of rows) {
       known.add(key);
-      const value = key in existing ? existing[key].value : dflt;
+      // A blank email subject/body means "built-in wording", so it is refilled. Any other blank (ntfy topic, host
+      // email, admin key) is the host switching that off and stays blank; a blank toggle keeps its default.
+      const old = key in existing ? existing[key].value : undefined;
+      const refill = /^guest_\w+_(subject|body)$/.test(key);
+      const value = old === undefined || (old === '' && (refill || typeof dflt === 'boolean')) ? dflt : old;
       out.push({ key, label, value: typeof dflt === 'boolean' ? truthy(value) : value, note });
     }
   }
@@ -184,5 +211,5 @@ function settingsRows(actions, existing, runtime) {
 
 if (typeof module !== 'undefined') {
   module.exports = { truthy, cleanText, daysBetween, dueMessages, partySize, board, canSeeAddress, notifyChannels, validateRsvp,
-    guestEmailOn, copyOverride, fillTemplate, toParagraphs, settingsRows, GUEST_EMAILS };
+    guestEmailOn, copyOverride, defaultCopy, fillTemplate, toParagraphs, settingsRows, GUEST_EMAILS };
 }

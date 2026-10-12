@@ -346,7 +346,7 @@ const GUEST_FACING = ['doGet', 'doPost', 'api', 'onOpen'];
 const HOST_ONLY = ['setup', 'generateTokens', 'emailInvitesToSelection', 'textInvitesToSelection', 'installTriggers', 'flushNotifications', 'dailyRun'];
 // Pure functions in logic.js: no Sheet, mail or network access, so a visitor calling them directly learns nothing.
 const PURE = ['truthy', 'cleanText', 'daysBetween', 'dueMessages', 'partySize', 'board', 'canSeeAddress', 'notifyChannels',
-  'validateRsvp', 'guestEmailOn', 'copyOverride', 'fillTemplate', 'toParagraphs', 'settingsRows'];
+  'validateRsvp', 'guestEmailOn', 'copyOverride', 'defaultCopy', 'fillTemplate', 'toParagraphs', 'settingsRows'];
 
 const asVisitor = (ctx) => {
   ctx.Session = { getActiveUser: () => ({ getEmail: () => '' }), getEffectiveUser: () => ({ getEmail: () => 'host@example.com' }) };
@@ -417,4 +417,119 @@ test('every public top-level function is guest-facing, pure, or guarded by hostO
   }
   assert.deepEqual(bad, [], 'new public function: end its name with _, or classify it (and guard it with hostOnly_ if it touches data)');
   for (const name of [...GUEST_FACING, ...HOST_ONLY]) assert.ok(found[name], name + ' is listed but missing');
+});
+
+test('built-in wording is what is sent when a cell is blank, and what setup pre-fills', () => {
+  const ctx = withModules(fresh());
+  const m = confirmedMail(ctx, 'test2');
+  assert.equal(m.subject, `You're in! ${vm.runInContext('EVENT.title', ctx)}`);
+  assert.match(m.htmlBody, /You're confirmed for/);
+  const rows = JSON.parse(vm.runInContext("JSON.stringify(settingsRows(NOTIFY_ACTIONS, {}, { host_email: '', ntfy_topic: '', admin_key: '', modules: modules_() }))", ctx));
+  const body = rows.find((r) => r.key === 'guest_confirmed_body').value;
+  assert.match(body, /\{first_name\}/);
+  assert.match(body, /\{can_do\}/);
+  assert.equal(body, vm.runInContext("defaultCopy('confirmed', 'body', modules_())", ctx));
+});
+
+test('email palette comes from the generated theme, not hardcoded colors', () => {
+  const ctx = withModules(fresh());
+  vm.runInContext("EMAIL_THEME = { ...EMAIL_THEME, bg: '#0b1524', accent: '#ffbd59' }", ctx);
+  const m = confirmedMail(ctx, 'test2');
+  assert.match(m.htmlBody, /background:#0b1524/);
+  assert.match(m.htmlBody, /background:#ffbd59/);
+  assert.ok(!m.htmlBody.includes('#f2b25c') && !m.htmlBody.includes('#0f2523'));
+});
+
+test('a non-image hero is left out of emails', () => {
+  const ctx = withModules(gasMode(fresh()));
+  vm.runInContext("EVENT.images.hero.src = 'assets/hero.mp4'", ctx);
+  assert.doesNotMatch(confirmedMail(ctx, 'test2').htmlBody, /<img/);
+});
+
+// ---- module-gated tabs and activities ----
+
+const tabNames = (ctx) => JSON.parse(vm.runInContext('JSON.stringify(tabNames_())', ctx));
+const withFeatures = (features) => {
+  const ctx = makeContext({ ...structuredClone(FIXTURE), features });
+  seed(ctx);
+  return ctx;
+};
+const hasSheet = (ctx, n) => vm.runInContext(`!!sheet_('${n}')`, ctx);
+
+test('setup creates Food/Trips/Activities only for modules that are on', () => {
+  const off = withFeatures(['schedule', 'guest_list']);
+  for (const n of ['Settings', 'Guests', 'Log']) assert.ok(hasSheet(off, n), n);
+  for (const n of ['Food', 'Trips', 'Activities']) assert.ok(!hasSheet(off, n), n);
+  const on = withFeatures(['menu', 'trips', 'activities']);
+  for (const n of ['Food', 'Trips', 'Activities']) assert.ok(hasSheet(on, n), n);
+  assert.deepEqual(tabNames(off), ['Settings', 'Guests', 'Log']);
+});
+
+test('with modules off, reads return empty and writes are refused', () => {
+  const ctx = withFeatures(['schedule', 'guest_list']);
+  const b = call(ctx, { action: 'board', token: 'test1' });
+  assert.deepEqual([b.data.menu, b.data.trips, b.data.activities], [[], [], []]);
+  assert.equal(call(ctx, { action: 'me', token: 'test1' }).ok, true);
+  assert.equal(call(ctx, { action: 'admin', key: 'dev' }).data.food.length, 0);
+  const slot = EV.food_slots[0].id;
+  for (const body of [{ action: 'addFood', slot, item: 'Pie' }, { action: 'addTrip', title: 'Hike' }, { action: 'addActivity', title: 'Charades' }]) {
+    assert.deepEqual(call(ctx, { ...body, token: 'test1' }), { ok: false, error: 'That part of the invite is turned off.' }, body.action);
+  }
+});
+
+test('a module turned on after setup creates its missing tab on first write', () => {
+  const ctx = withFeatures(['schedule', 'guest_list']);
+  vm.runInContext("EVENT.features = ['activities', 'menu']", ctx);
+  assert.ok(!hasSheet(ctx, 'Activities'));
+  assert.equal(call(ctx, { action: 'addActivity', token: 'test1', title: 'Charades' }).ok, true);
+  assert.ok(hasSheet(ctx, 'Activities'));
+  assert.equal(call(ctx, { action: 'board', token: 'test1' }).data.activities[0].title, 'Charades');
+  assert.equal(call(ctx, { action: 'addFood', token: 'test1', slot: EV.food_slots[0].id, item: 'Pie' }).ok, true);
+  assert.ok(hasSheet(ctx, 'Food'));
+});
+
+test('prefilled confirmed wording sends byte-identical to a blank cell, with no dangling module sentence', () => {
+  for (const features of [['menu', 'trips'], ['menu'], []]) {
+    const kinds = ['confirmed'];
+    const send = (prefill) => {
+      const ctx = withFeatures(features);
+      if (prefill) for (const f of ['subject', 'body']) setSetting(ctx, 'guest_confirmed_' + f, vm.runInContext(`defaultCopy('confirmed', '${f}', {menu:true,trips:true})`, ctx));
+      return confirmedMail(ctx, 'test2');
+    };
+    for (const k of kinds) assert.equal(JSON.stringify(send(true)), JSON.stringify(send(false)), k + features);
+    assert.doesNotMatch(send(true).htmlBody, /sign up on\s*(\.| and)|plan\s*\./);
+  }
+});
+
+test('every guest email kind: a prefilled cell equals a blank cell', () => {
+  const ctx = fresh();
+  for (const k of ['invite', 'confirmed', 'remind', 'confirm']) {
+    const run = (prefill) => {
+      const s = prefill ? { [`guest_${k}_subject`]: vm.runInContext(`defaultCopy('${k}', 'subject', modules_())`, ctx), [`guest_${k}_body`]: vm.runInContext(`defaultCopy('${k}', 'body', modules_())`, ctx) } : {};
+      return JSON.stringify(vm.runInContext(`guestCopy_('${k}', ${JSON.stringify(s)}, { first_name: 'A', title: 'T', when: 'W', days: 3 }, { invite_link: { html: '<a>x</a>' }, can_do: { html: 'You can. ' } })`, ctx));
+    };
+    assert.equal(run(true), run(false), k);
+  }
+});
+
+test('setup never removes a tab that already exists', () => {
+  const ctx = withFeatures(['menu', 'trips']);
+  vm.runInContext("appendRow_('Trips', { id: 'keep', title: 'Mine' })", ctx);
+  vm.runInContext("EVENT.features = ['schedule']; setup();", ctx);
+  assert.ok(hasSheet(ctx, 'Trips'));
+  assert.ok(vm.runInContext("rows_('Trips').some((t) => t.id === 'keep')", ctx));
+});
+
+test('activities: add, list, remove, validation', () => {
+  const ctx = withFeatures(['activities']);
+  assert.equal(call(ctx, { action: 'addActivity', token: 'test2', title: 'Charades' }).ok, false, 'invited guests cannot add');
+  assert.equal(call(ctx, { action: 'addActivity', token: 'test1', title: '   ' }).ok, false);
+  const { id } = call(ctx, { action: 'addActivity', token: 'test1', title: ' Charades ', details: 'Teams of 3' }).data;
+  const list = call(ctx, { action: 'board', token: 'test3' }).data.activities;
+  assert.deepEqual(list, [{ id, title: 'Charades', details: 'Teams of 3', by: 'Alex', mine: false }]);
+  assert.equal(call(ctx, { action: 'removeActivity', token: 'test3', id }).ok, false, 'only the owner removes');
+  assert.equal(call(ctx, { action: 'removeActivity', token: 'test1', id }).ok, true);
+  assert.deepEqual(call(ctx, { action: 'board', token: 'test1' }).data.activities, []);
+  const actions = JSON.parse(vm.runInContext("JSON.stringify(rows_('Log').map((l) => l.action))", ctx));
+  assert.deepEqual(actions.filter((a) => a === 'activity').length, 2);
 });

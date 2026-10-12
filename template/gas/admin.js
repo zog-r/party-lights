@@ -40,6 +40,7 @@ function setup() {
     host_email: Session.getEffectiveUser().getEmail(),
     ntfy_topic: 'invite-' + Utilities.getUuid().slice(0, 12),
     admin_key: Utilities.getUuid(),
+    modules: modules_(),
   });
   const sh = sheet_('Settings');
   sh.clear();
@@ -100,12 +101,11 @@ function emailInvitesToSelection() {
   for (const g of guests) {
     if (!g.email) continue;
     const link = guestLink_(s, g);
-    const copy = guestCopy_('invite', s, guestVars_(g), { invite_link: anchor_(link, 'your invite', '#8a3b2e') }, `You're invited: ${EVENT.title}`);
+    const copy = guestCopy_('invite', s, guestVars_(g), { invite_link: anchor_(link, 'your invite', theme_().accent) });
     MailApp.sendEmail(guestMail_(s, {
       to: g.email,
       subject: copy.subject,
-      htmlBody: guestEmailHtml_(copy, [`Hi ${firstName_(g.name)}!`, EVENT.tagline,
-        `${EVENT.main.label}: ${EVENT.when_text} · ${EVENT.area}`], 'See the invite & RSVP', link),
+      htmlBody: emailHtml_(s, "You're invited", copy.paragraphs, 'See the invite & RSVP', link),
     }));
     markInvited_(g, g.email);
     sent++;
@@ -177,12 +177,11 @@ function dailyRun(today) {
       : `${m.days} days until ${EVENT.title}! Your invite: ${link}`;
     if (m.channel === 'email') {
       if (!guestEmailOn(m.kind, s)) continue;
-      const copy = guestCopy_(m.kind, s, guestVars_(g, { days: m.days }), { invite_link: anchor_(link, 'your invite', '#8a3b2e') },
-        m.kind === 'confirm' ? `Still coming? Confirm for ${EVENT.title}` : `${m.days} days until ${EVENT.title}`);
+      const copy = guestCopy_(m.kind, s, guestVars_(g, { days: m.days }), { invite_link: anchor_(link, 'your invite', theme_().accent) });
       MailApp.sendEmail(guestMail_(s, {
         to: g.email,
         subject: copy.subject,
-        htmlBody: guestEmailHtml_(copy, [`Hi ${firstName_(g.name)}!`, line.split(':')[0] + '.', ''],
+        htmlBody: emailHtml_(s, m.kind === 'confirm' ? 'Still coming?' : 'Coming up', copy.paragraphs,
           m.kind === 'confirm' ? 'Yes, I\'m still coming' : 'Open my invite', link),
       }));
     } else {
@@ -218,54 +217,28 @@ function notifyHost_(action, detail, s) {
 }
 
 // Queued by the rsvp action when a guest first says yes; sent here, never in the request path.
-// Edit the copy below to your own voice. Palette from site/styles.css, as inline-styled tables (email clients ignore stylesheets).
+// Edit the copy below to your own voice. Every guest email shares emailHtml_, styled from the site's own palette.
 function emailGuestConfirmed_(l, s) {
   const g = rows_('Guests').find((r) => r.token === l.token);
   if (!g || !g.email) return 'skipped';
   if (!guestEmailOn('confirmed', s)) return 'off';
-  const at = (page) => esc_(pageUrl_(s, page, `t=${g.token}`));
-  const a = (page, text) => `<a href="${at(page)}" style="color:#f7cd8e">${text}</a>`;
-  const link = (page, text) => anchor_(pageUrl_(s, page, `t=${g.token}`), text, '#f7cd8e');
+  const link = (page, text) => anchor_(pageUrl_(s, page, `t=${g.token}`), text, theme_().accent);
+  const menu = modOn_('menu') ? link('menu', 'the menu') : '';
+  const trips = modOn_('trips') ? link('trips', 'day trips') : '';
+  const can = [menu && `sign up on ${menu.html}`, trips && `plan ${trips.html}`].filter(Boolean);
   const copy = guestCopy_('confirmed', s, guestVars_(g), {
-    invite_link: link('index', 'your invite page'), menu_link: modOn_('menu') ? link('menu', 'the menu') : '',
-    trips_link: modOn_('trips') ? link('trips', 'day trips') : '', calendar_link: link('details', 'add to calendar'),
-  }, `You're in! ${EVENT.title}`);
-  const hero = heroImage_(s);
-  const serif = "Fraunces,Georgia,'Times New Roman',serif";
-  const p = (html) => `<p style="margin:0 0 16px;font:17px/1.6 ${serif};color:#f6f0e6">${html}</p>`;
-  const caps = `font:600 11px/1 'Instrument Sans',Helvetica,Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase`;
-  const html = `<div style="background:#0f2523;padding:24px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:auto;background:#143029">
-    ${hero.src ? `<tr><td><img src="${esc_(hero.src)}" alt="" width="560" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''}
-    <tr><td style="padding:32px 32px 8px">
-      <div style="${caps};color:#f2b25c;margin-bottom:14px">You're in</div>
-      <h1 style="margin:0 0 24px;font:400 30px/1.15 ${serif};color:#f6f0e6">${esc_(EVENT.title)}</h1>
-      ${(copy.paragraphs || [
-    `Hi ${esc_(firstName_(g.name))}!`,
-    `You're confirmed for ${esc_(EVENT.title)} (${esc_(EVENT.when_text)}). Be sure to add this to your calendar.` + signUp_(a) + ` See everything on your ` + a('index', 'invite page') + '.',
-    'Expect a reminder to confirm your plans closer to the day!',
-    "I'm excited to host you!",
-    'Cheers!<br>Your host',
-  ]).map(p).join('\n      ')}
-      <p style="margin:24px 0 8px"><a href="${at('details')}" style="display:inline-block;background:#f2b25c;color:#0f2523;padding:14px 24px;border-radius:2px;text-decoration:none;${caps}">Add to calendar</a></p>
-    </td></tr>
-    <tr><td style="padding:16px 32px 28px;border-top:1px solid #2a3f3a;font:12px/1.5 Helvetica,Arial,sans-serif;color:#a9b9b4">These links are just for you. Please don't forward this email.</td></tr>
-  </table></div>`;
-  const mail = { to: g.email, subject: copy.subject, htmlBody: html };
-  if (hero.blob) mail.inlineImages = { hero: hero.blob };
-  MailApp.sendEmail(guestMail_(s, mail));
+    invite_link: link('index', 'your invite page'), menu_link: menu, trips_link: trips, calendar_link: link('details', 'add to calendar'),
+    can_do: { html: can.length ? `You can ${can.join(' and ')}. ` : '' },
+  });
+  MailApp.sendEmail(guestMail_(s, { to: g.email, subject: copy.subject,
+    htmlBody: emailHtml_(s, "You're in", copy.paragraphs, 'Add to calendar', pageUrl_(s, 'details', `t=${g.token}`)) }));
   return 'guest-email';
 }
 
 // Older events have no `features`; every module counts as on there.
 function modOn_(id) { return !EVENT.features || EVENT.features.includes(id); }
 
-// "You can sign up for food/drinks and set up a day trip." with only the modules that are on.
-function signUp_(a) {
-  const parts = [];
-  if (modOn_('menu')) parts.push('sign up for ' + a('menu', 'food/drinks'));
-  if (modOn_('trips')) parts.push('set up a ' + a('trips', 'day trip'));
-  return parts.length ? ` You can ${parts.join(' and ')}.` : '';
-}
+function modules_() { return { menu: modOn_('menu'), trips: modOn_('trips') }; }
 
 function guestVars_(g, extra) {
   return { first_name: firstName_(g.name), title: EVENT.title, when: EVENT.when_text, ...extra };
@@ -275,27 +248,23 @@ function anchor_(href, text, color) {
   return { html: `<a href="${esc_(href)}" style="color:${color}">${esc_(text)}</a>` };
 }
 
-// Host-written subject/body from Settings win; a blank one falls back to the built-in wording.
-// Substituted values are HTML-escaped in the body, so a guest's name can't inject markup.
-function guestCopy_(kind, s, vars, links, defaultSubject) {
-  const subject = copyOverride(kind, 'subject', s);
-  const body = copyOverride(kind, 'body', s);
+// Host-written subject/body from Settings win; a blank one falls back to the built-in wording (the same text setup
+// pre-fills into those cells). Substituted values are HTML-escaped in the body, so a guest's name can't inject markup.
+function guestCopy_(kind, s, vars, links) {
+  const subject = copyOverride(kind, 'subject', s) || defaultCopy(kind, 'subject', modules_());
+  const body = copyOverride(kind, 'body', s) || defaultCopy(kind, 'body', modules_());
   return {
-    subject: subject ? cleanText(fillTemplate(subject, vars, String), 200) : defaultSubject,
-    paragraphs: body ? toParagraphs(fillTemplate(body, { ...vars, ...links }, esc_)) : null,
+    subject: cleanText(fillTemplate(subject, vars, String), 200),
+    paragraphs: toParagraphs(fillTemplate(body, { ...vars, ...links }, esc_)),
   };
-}
-
-function guestEmailHtml_(copy, defaults, cta, href) {
-  return copy.paragraphs
-    ? emailHtml_('', copy.paragraphs.map((html) => ({ html })), '', cta, href)
-    : emailHtml_(defaults[0], defaults[1], defaults[2], cta, href);
 }
 
 function guestMail_(s, opts) {
   const out = { ...opts };
   if (s.guest_from_name) out.name = String(s.guest_from_name);
   if (s.guest_reply_to) out.replyTo = String(s.guest_reply_to);
+  const hero = heroImage_(s);
+  if (hero.blob && String(out.htmlBody).includes('cid:hero')) out.inlineImages = { hero: hero.blob };
   return out;
 }
 
@@ -307,10 +276,19 @@ function pageUrl_(s, page, query) {
 }
 
 // Gmail won't load images from an Apps Script URL, so without a site the hero rides along as an inline attachment.
+// Only a real image counts: a design may use a video or CSS hero, and the emails then simply have no picture.
 function heroImage_(s) {
-  if (s.site_url) return { src: `${s.site_url}/${EVENT.images.hero.src}` };
+  const src = EVENT.images && EVENT.images.hero && EVENT.images.hero.src;
+  if (!src || !/\.(jpe?g|png|gif|webp)$/i.test(src)) return {};
+  if (s.site_url) return { src: `${s.site_url}/${src}` };
   if (typeof HERO_B64 === 'undefined' || !HERO_B64) return {};
-  return { src: 'cid:hero', blob: Utilities.newBlob(Utilities.base64Decode(HERO_B64), 'image/jpeg', 'hero.jpg') };
+  const mime = typeof HERO_MIME === 'undefined' ? 'image/jpeg' : HERO_MIME;
+  return { src: 'cid:hero', blob: Utilities.newBlob(Utilities.base64Decode(HERO_B64), mime, 'hero.' + src.split('.').pop()) };
+}
+
+// The site's palette and fonts for email, baked into hero.gen.js from styles.css by build-gas-site.js.
+function theme_() {
+  return EMAIL_THEME;
 }
 
 function guestLink_(s, g) {
@@ -326,10 +304,21 @@ function esc_(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-function emailHtml_(greeting, line1, line2, cta, href) {
-  return `<div style="font-family:Georgia,serif;max-width:480px;margin:auto;padding:24px;color:#2b2320">
-    <h2 style="margin:0 0 12px">${esc_(EVENT.title)}</h2>
-    ${greeting ? `<p>${esc_(greeting)}</p>` : ''}${[].concat(line1, line2 || []).map((t) => `<p>${t.html !== undefined ? t.html : esc_(t)}</p>`).join('')}
-    <p><a href="${esc_(href)}" style="display:inline-block;background:#8a3b2e;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${esc_(cta)}</a></p>
-    <p style="font-size:12px;color:#7a6d66">This link is just for you. Please don't forward it.</p></div>`;
+// One look for every guest email: the event's hero, background, text, button and fonts, as inline-styled tables
+// (email clients ignore stylesheets). `paragraphs` are trusted HTML.
+function emailHtml_(s, kicker, paragraphs, cta, href) {
+  const t = theme_();
+  const hero = heroImage_(s);
+  const caps = `font:600 11px/1 ${t.body};letter-spacing:.18em;text-transform:uppercase`;
+  const p = (html) => `<p style="margin:0 0 16px;font:17px/1.6 ${t.display};color:${t.ink}">${html}</p>`;
+  return `<div style="background:${t.bg};padding:24px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:auto;background:${t.card}">
+    ${hero.src ? `<tr><td><img src="${esc_(hero.src)}" alt="" width="560" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''}
+    <tr><td style="padding:32px 32px 8px">
+      ${kicker ? `<div style="${caps};color:${t.accent};margin-bottom:14px">${esc_(kicker)}</div>` : ''}
+      <h1 style="margin:0 0 24px;font:400 30px/1.15 ${t.display};color:${t.ink}">${esc_(EVENT.title)}</h1>
+      ${paragraphs.map(p).join('\n      ')}
+      <p style="margin:24px 0 8px"><a href="${esc_(href)}" style="display:inline-block;background:${t.accent};color:${t.onAccent};padding:14px 24px;border-radius:2px;text-decoration:none;${caps}">${esc_(cta)}</a></p>
+    </td></tr>
+    <tr><td style="padding:16px 32px 28px;border-top:1px solid ${t.hair};font:12px/1.5 ${t.body};color:${t.muted}">These links are just for you. Please don't forward this email.</td></tr>
+  </table></div>`;
 }
